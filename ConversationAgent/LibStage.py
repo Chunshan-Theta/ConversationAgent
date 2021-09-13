@@ -259,14 +259,25 @@ class LibSwitchStage(Stage):
 
     def is_fit_needs_n_gen_entity(self, kwargs) -> (bool, dict):
         raise RuntimeError
+##
+
+#
+__LIB_STAGES__ = {
+    __RE_STAGE__: REStage,
+    __QA_STAGE__: QAStage,
+    __SWITCH_STAGE__: LibSwitchStage,
+    __LIB_SWITCH_STAGE__: LibSwitchStage
+}
 
 
-def gen_multi_agent(stage_dict: dict):
+def gen_multi_agent(stage_dict: dict, stages_classes=None):
+    if stages_classes is None:
+        stages_classes = __LIB_STAGES__
     stages = {}
     for stages_label, stage_jsons in stage_dict.items():
         stages[stages_label] = []
         for stage_json in stage_jsons:
-            stage_class = __LIB_STAGES__[stage_json["stage_type"]]
+            stage_class = stages_classes[stage_json["stage_type"]]
             stages[stages_label].append(stage_class(stage_json))
 
     return MultiAgent(stages)
@@ -276,10 +287,4 @@ def gen_agent(stage_dict: dict):
     return gen_multi_agent(stage_dict)
 
 
-#
-__LIB_STAGES__ = {
-    __RE_STAGE__: REStage,
-    __QA_STAGE__: QAStage,
-    __SWITCH_STAGE__: LibSwitchStage,
-    __LIB_SWITCH_STAGE__: LibSwitchStage
-}
+
