@@ -7,7 +7,7 @@ from .__stage__ import Stage, __USER_TEXT__, __SYS_REPLY__, StageStatus, \
     __KEEP_DEFAULT_VAR__
 
 
-class Agent:
+class SingleThreadAgent:
 
     def __init__(self, stages: [Stage]):
         self.stages = stages
@@ -56,7 +56,7 @@ class Agent:
         raise RuntimeError
 
 
-class MultiAgent(Agent):
+class MultiAgent(SingleThreadAgent):
     __MAIN_STAGES__ = "__MAIN_STAGES__"
     __MAX_LEVEL__ = 10
 
@@ -69,7 +69,7 @@ class MultiAgent(Agent):
     def to_dict(self):
         re_dict = {}
         for key, stages in self.multi_stages.items():
-            re_dict[key] = [s.raw_data for s in stages]
+            re_dict[key] = [s.clear_user_text for s in stages]
         return re_dict
 
     @staticmethod
@@ -86,7 +86,7 @@ class MultiAgent(Agent):
     def run_one_stages(self, stages, kwargs):
         for idx, stage in enumerate(stages):
 
-            # clear data for loop map
+            # clear data for loop thread
             if stage.stage_id in self.__STAGES_IDS__:
                 for rm_idx in self.__STAGES_IDS__[self.__STAGES_IDS__.index(stage.stage_id):]:
 
@@ -133,3 +133,6 @@ class MultiAgent(Agent):
                 return result, kwargs
 
         raise RuntimeError(f"""the agent NEVER close or over Max count of stage:{self.__MAX_LEVEL__}.""")
+
+class Agent(SingleThreadAgent):
+    pass

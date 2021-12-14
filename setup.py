@@ -3,7 +3,7 @@ with open("./ConversationAgent/README.md", "r", encoding="utf-8") as fh:
   long_description = fh.read()
 setuptools.setup(
     name='ConversationAgent',
-    version='0.3.10',
+    version='0.5.4',
     description='ConversationAgent',
     author='Theta',
     license='',

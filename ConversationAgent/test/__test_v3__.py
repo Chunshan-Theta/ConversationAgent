@@ -263,7 +263,7 @@ print(f"reply_text: {reply_text}")
 # print(f"data: {data}")
 # output2file(data, "0.json")
 
-assert ['飲品問題完成', '循環FAQ歡迎'] == reply_text
+assert ['飲品問題 完成', '循環FAQ歡迎'] == reply_text
 
 #
 text = "餐飲問題"
@@ -272,7 +272,7 @@ print(f"reply_text: {reply_text}")
 # print(f"data: {data}")
 # output2file(data, "1.json")
 
-assert ['飲品問題完成', '循環FAQ歡迎'] == reply_text
+assert ['飲品問題 完成', '循環FAQ歡迎'] == reply_text
 
 #
 text = "餐飲問題"
@@ -280,7 +280,7 @@ reply_text, data = mock_client_once(agent, text, data)
 print(f"reply_text: {reply_text}")
 # print(f"data: {json.dumps(data,ensure_ascii=False)}")
 # output2file(data, "2.json")
-assert ['飲品問題完成', '循環FAQ歡迎'] == reply_text
+assert ['飲品問題 完成', '循環FAQ歡迎'] == reply_text
 
 
 #
@@ -289,7 +289,7 @@ reply_text, data = mock_client_once(agent, text, data)
 print(f"reply_text: {reply_text}")
 # print(f"data: {data}")
 # output2file(data, "3.json")
-assert ['飲品問題完成', '循環FAQ歡迎'] == reply_text
+assert ['飲品問題 完成', '循環FAQ歡迎'] == reply_text
 
 #
 text = "餐飲問題"
@@ -297,4 +297,4 @@ reply_text, data = mock_client_once(agent, text, data)
 print(f"reply_text: {reply_text}")
 # print(f"data: {data}")
 # output2file(data, "4.json")
-assert ['飲品問題完成', '循環FAQ歡迎'] == reply_text
+assert ['飲品問題 完成', '循環FAQ歡迎'] == reply_text

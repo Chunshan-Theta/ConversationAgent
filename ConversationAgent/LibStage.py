@@ -3,14 +3,17 @@ from .__agent__ import Agent, MultiAgent
 from .__tool__ import get_value_from_dict_by_multi_name, compute_by_string
 from .jieba_zh import analyse
 import re
+import random
 
 __RE_STAGE__ = "__RE_STAGE__"
 __QA_STAGE__ = "__QA_STAGE__"
+__Similarly_STAGE__ = "__Similarly_STAGE__"
 __SWITCH_STAGE__ = StageType.SWITCH
 __LIB_SWITCH_STAGE__ = "__LIB_SWITCH_STAGE__"
+__Classify_STAGE__ = "__Classify_STAGE__"
 
 #
-__QUESTIONS_LABEL__ = ["__SYS_QUESTION__", "question", "says"]
+__QUESTIONS_LABEL__ = ["__SYS_QUESTION__", "question", "says", "corpus"]
 __WELCOME_SAYING_LABELS__ = ["__SYS_WELCOME__", "sys_reply_q1", "sys_welcome"]
 __REFUSE_SAYING_LABELS__ = ["__SYS_REFUSE__", "sys_reply_q2", "sys_refuse"]
 __COMPLETE_SAYING_LABELS__ = ["__SYS_COMPLETE__", "sys_reply_complete", "sys_complete"]
@@ -21,17 +24,17 @@ from .nlp_tool import similar
 
 
 class QAStage(Stage):
-    __QA_RESPOND__ = "__QA_RESPOND__"
-    __QA_RESPOND_SCORE__ = "__QA_RESPOND_SCORE__"
-    __QA_RESPOND_QUESTION__ = "__QA_RESPOND_QUESTION__"
-    __QA_RESPOND_THRESHOLD__ = "__QA_RESPOND_THRESHOLD__"
+    __QA_RESPOND__ = ["__QA_RESPOND__"]
+    __QA_RESPOND_SCORE__ = ["__QA_RESPOND_SCORE__"]
+    __QA_RESPOND_QUESTION__ = ["__QA_RESPOND_QUESTION__"]
+    __QA_RESPOND_THRESHOLD__ = ["__QA_RESPOND_THRESHOLD__"]
     __QA_THRESHOLD__ = "qa_threshold"
     __IS_FITS__ = "is_fits"
     __SAVED_NAME__ = "__SAVED_NAME__"
     __CORPUS__ = "corpus"
     __QUESTIONS__ = "question"
     __SIMILAR_METHOD__ = "similar_method"
-    __RUNNING_CORPUS__ = "__RUNNING_CORPUS__"
+    __RUNNING_CORPUS__ = ["__RUNNING_CORPUS__"]
     __DISSABLE_Q1__ = "__DISSABLE_Q1__"
     __REFACTOR_QUESTION__ = "refactor_questions"
 
@@ -39,10 +42,10 @@ class QAStage(Stage):
         super(QAStage, self).__init__(**data)
         self.raw_data = data
         self.stage_type = data.get("stage_type")
-        self.corpus = {}
-        corpus = data.get(self.__CORPUS__)
-        for k, v in corpus.items():
-            self.corpus[k.replace(" ", "")] = v.replace(" ", "")
+        # self.corpus = {}
+        self.corpus = data.get(self.__CORPUS__)
+        # for k, v in corpus.items():
+        #     self.corpus[k.replace(" ", "")] = v.replace(" ", "")
 
         #
         self.questions = get_value_from_dict_by_multi_name(d=data, names=__QUESTIONS_LABEL__)
@@ -71,7 +74,7 @@ class QAStage(Stage):
         return list(self.corpus.keys() if not self.refactor_questions else dict_corpus.keys()), dict_corpus
 
     def __decode_corpus__(self, worker_response, new_dict_corpus):
-        best_res_content = str(worker_response[0][0]).replace(" ", "")
+        best_res_content = str(worker_response[0][0])
         if self.refactor_questions:
             best_res_content = new_dict_corpus[best_res_content] if best_res_content in new_dict_corpus else '0'
         return best_res_content
@@ -88,13 +91,25 @@ class QAStage(Stage):
         ##
         best_res_score = worker_response[0][1]
         best_res_responds = self.corpus[best_res_content] if best_res_content in self.corpus else None
+        if isinstance(best_res_responds,list):
+            best_res_responds = random.choice(best_res_responds)
 
         ##
-        __RUNNING_CORPUS__ = self.saved_name.get(self.__RUNNING_CORPUS__, self.__RUNNING_CORPUS__)
-        __QA_RESPOND__ = self.saved_name.get(self.__QA_RESPOND__, self.__QA_RESPOND__)
-        __QA_RESPOND_QUESTION__ = self.saved_name.get(self.__QA_RESPOND_QUESTION__, self.__QA_RESPOND_QUESTION__)
-        __QA_RESPOND_SCORE__ = self.saved_name.get(self.__QA_RESPOND_SCORE__, self.__QA_RESPOND_SCORE__)
-        __QA_RESPOND_THRESHOLD__ = self.saved_name.get(self.__QA_RESPOND_THRESHOLD__, self.__QA_RESPOND_THRESHOLD__)
+        __RUNNING_CORPUS__ = get_value_from_dict_by_multi_name(d=self.saved_name, names=self.__RUNNING_CORPUS__,
+                                                               default=self.__RUNNING_CORPUS__[0])
+
+
+        __QA_RESPOND__ = get_value_from_dict_by_multi_name(d=self.saved_name, names=self.__QA_RESPOND__,
+                                                           default=self.__QA_RESPOND__[0])
+        __QA_RESPOND_QUESTION__ = get_value_from_dict_by_multi_name(d=self.saved_name,
+                                                                    names=self.__QA_RESPOND_QUESTION__,
+                                                                    default=self.__QA_RESPOND_QUESTION__[0])
+        __QA_RESPOND_SCORE__ = get_value_from_dict_by_multi_name(d=self.saved_name,
+                                                                 names=self.__QA_RESPOND_SCORE__,
+                                                                 default=self.__QA_RESPOND_SCORE__[0])
+        __QA_RESPOND_THRESHOLD__ = get_value_from_dict_by_multi_name(d=self.saved_name,
+                                                                 names=self.__QA_RESPOND_THRESHOLD__,
+                                                                 default=self.__QA_RESPOND_THRESHOLD__[0])
 
         #
         kwargs = self.set_default_var(kwargs, __RUNNING_CORPUS__, corpus)
@@ -259,14 +274,81 @@ class LibSwitchStage(Stage):
 
     def is_fit_needs_n_gen_entity(self, kwargs) -> (bool, dict):
         raise RuntimeError
+
+
+class SimilarlyStage(QAStage):
+    pass
+
+
+class ClassifyStage(REStage):
+    __Classify_THRESHOLD__ = "__Classify_THRESHOLD__"
+    __SAVED_NAME__ = "__SAVED_NAME__"
+
+    ##
+    __SAVE_Classify_THRESHOLD__ = "__SAVE_Classify_THRESHOLD__"
+    __SAVE_Classify_PASS__ = "__SAVE_Classify_PASS__"
+    __SAVE_Classify_Best__ = "__SAVE_Classify_Best__"
+    __SAVE_Classify_result__ = "__SAVE_Classify_result__"
+
+    def get_classify_text(self, text, rules) -> dict:
+        # classify by RE-rule
+        # return likes: {"var_name_1":1.0,"var_name_2":0.3,"var_name_3":0.9}
+        re_dict = {}
+        for (rule, entity_name) in rules:
+            entities = self.__get_entity__(rule, text)
+            if len(entities) > 0:
+                re_dict[entity_name] = 1.0
+            else:
+                re_dict[entity_name] = 0.0
+        return re_dict
+
+    def __init__(self, data):
+        super().__init__(data)
+        self.__Classify_THRESHOLD__ = data.get(self.__Classify_THRESHOLD__, 0.5)
+        self.__SAVED_NAME__ = data.get("__SAVED_NAME__", {})
+
+    def is_fit_needs_n_gen_entity(self, kwargs) -> (bool, dict):
+
+        user_text = kwargs.get(__USER_TEXT__, "")
+        pass_token = False
+
+        classify_values_dict = self.get_classify_text(text=user_text, rules=self.is_fits)
+        for entity_name, value in classify_values_dict.items():
+            if value >= self.__Classify_THRESHOLD__:
+                pass_token = True
+            kwargs = self.set_default_var(kwargs, entity_name, value)
+
+        # Save
+        __LABEL_SAVE_Classify_THRESHOLD__ = self.__SAVED_NAME__.get(self.__SAVE_Classify_THRESHOLD__,
+                                                                    self.__SAVE_Classify_THRESHOLD__)
+        __LABEL_SAVE_Classify_PASS__ = self.__SAVED_NAME__.get(self.__SAVE_Classify_PASS__, self.__SAVE_Classify_PASS__)
+        __LABEL_SAVE_Classify_Best__ = self.__SAVED_NAME__.get(self.__SAVE_Classify_Best__, self.__SAVE_Classify_Best__)
+        __LABEL_SAVE_Classify_result__ = self.__SAVED_NAME__.get(self.__SAVE_Classify_result__,
+                                                                 self.__SAVE_Classify_result__)
+
+        ##
+        kwargs = self.set_default_var(kwargs, __LABEL_SAVE_Classify_result__, classify_values_dict)
+        kwargs = self.set_default_var(kwargs, __LABEL_SAVE_Classify_THRESHOLD__, self.__Classify_THRESHOLD__)
+        kwargs = self.set_default_var(kwargs, __LABEL_SAVE_Classify_PASS__, pass_token)
+        kwargs = self.set_default_var(kwargs, __LABEL_SAVE_Classify_Best__,
+                                      max(classify_values_dict, key=classify_values_dict.get))
+
+        if self.disable_refuse_question:
+            pass_token = True
+
+        return pass_token, kwargs
+
+
 ##
 
 #
 __LIB_STAGES__ = {
     __RE_STAGE__: REStage,
-    __QA_STAGE__: QAStage,
+    __QA_STAGE__: SimilarlyStage,
     __SWITCH_STAGE__: LibSwitchStage,
-    __LIB_SWITCH_STAGE__: LibSwitchStage
+    __LIB_SWITCH_STAGE__: LibSwitchStage,
+    __Similarly_STAGE__: SimilarlyStage,
+    __Classify_STAGE__: ClassifyStage
 }
 
 
@@ -285,6 +367,3 @@ def gen_multi_agent(stage_dict: dict, stages_classes=None):
 
 def gen_agent(stage_dict: dict):
     return gen_multi_agent(stage_dict)
-
-
-

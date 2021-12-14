@@ -2,12 +2,14 @@ import json
 import uuid
 import re
 import random
+
 __USER_TEXT__ = "USER_TEXT"
 __PASS_TOKEN__ = "PASS_TOKEN"
 __SYS_REPLY__ = "SYS_REPLY"
 __SYS_STAGE__ = "SYS_STAGE"
 __KEEP_VAR__ = "KEEP_VAR"
 __KEEP_DEFAULT_VAR__ = "KEEP_DEFAULT_VAR"
+__PASSED_STAGES__ = "__PASSED_STAGES__"
 __LOCAL_VAR_LABEL__ = "__LOCAL_VAR_LABEL__"
 __LOCAL_VAR_VALUE__ = "__LOCAL_VAR_VALUE__"
 
@@ -33,6 +35,7 @@ class Stage:
         self.sys_reply_q1 = "init sys reply"  # init
         self.sys_reply_q2 = "refuse sys reply"  # refuse
         self.sys_reply_complete = "complete sys reply"  # complete
+        self.keep_user_text = kwargs.get("__KEEP_USER_TEXT__", False)
 
     @staticmethod
     def set_sys_stage_status(data: dict, label: str) -> dict:
@@ -61,6 +64,7 @@ class Stage:
     @classmethod
     def save_user_text(cls, data, stage_id, label):
         user_text = cls.get_user_text(data)
+        data = cls.set_var(data, __KEEP_DEFAULT_VAR__, label, user_text)
         return cls.set_var(data, stage_id, label, user_text)
 
     @staticmethod
@@ -68,7 +72,7 @@ class Stage:
         return data.get(__USER_TEXT__, None)
 
     @staticmethod
-    def is_token_pass(data: dict, stage_id) -> bool:
+    def had_the_token_was_pass(data: dict, stage_id) -> bool:
         token = data.get(__PASS_TOKEN__, None)
         if token is None:
             return False
@@ -101,22 +105,24 @@ class Stage:
         return None if re.match("^var\t.*\t.*\tvar$", label_string) is None else label_string.split("\t")
 
     @staticmethod
-    def is_var_label_human(label_string):
+    # def is_var_label_human(label_string):
+    def get_var_name_from_string(label_string):
         return None if re.match("^%%.*%%$", label_string) is None else label_string[2:-2]
 
     @classmethod
-    def get_default_var_label(cls, label: str):
-        return cls.get_var_label(__KEEP_DEFAULT_VAR__, label)
+    def get_default_var_ticket(cls, label: str) -> str:
+        return cls.get_var_ticket(__KEEP_DEFAULT_VAR__, label)
 
     def set_default_var(self, data, label, save_text):
         data = self.set_var(data, self.stage_id, label, save_text)
-        return self.set_var(data, __KEEP_DEFAULT_VAR__, label, save_text)
+        data = self.set_var(data, __KEEP_DEFAULT_VAR__, label, save_text)
+        return data
 
-    def get_default_var(self, data, label):
+    def get_default_var(self, data, label) -> any:
         return self.get_var(data, __KEEP_DEFAULT_VAR__, label)
 
     @staticmethod
-    def get_var_label(stage_id: str, label: str):
+    def get_var_ticket(stage_id: str, label: str):
         assert "\t" not in stage_id
         assert "\t" not in label
         return f"var\t{stage_id}\t{label}\tvar"
@@ -139,6 +145,14 @@ class Stage:
             return None
 
     @staticmethod
+    def set_sys_passed_stage(data, stage_name):
+        if __PASSED_STAGES__ in data:
+            data[__PASSED_STAGES__].append(stage_name)
+        else:
+            data[__PASSED_STAGES__] = [stage_name]
+        return data
+
+    @staticmethod
     def set_sys_reply(data, sys_reply_text):
         if __SYS_REPLY__ in data:
             data[__SYS_REPLY__].append(sys_reply_text)
@@ -152,72 +166,90 @@ class Stage:
         # print(f"sys_reply: {sys_reply}")
         __NEXT_LINE__ = "||n||"
         # insert ENTITY
-        sys_reply_complete_refactor = ""
+        sys_reply_complete_refactor = []
         ##
         sys_reply = sys_reply.replace("\n", __NEXT_LINE__)
 
         #
+        var_ticket = None
         for var in sys_reply.split(" "):
 
-            # parse
-            var_ticket_human = cls.is_var_label_human(var)
-            if var_ticket_human is not None:
-                var_ticket = cls.get_default_var_label(var_ticket_human).split("\t")
-            else:
-                var_ticket = cls.is_var_label(var)
+            # check the var is var ticket or not.
+            var_ticket_name = cls.get_var_name_from_string(var)
+            if var_ticket_name is not None:
+                # if it is a var ticket, then return:
+                # ->: var \t KEEP_DEFAULT_VAR \t {var_ticket_human} \t var"
+                var_ticket = cls.get_default_var_ticket(var_ticket_name).split("\t")
 
             # replace
             if var_ticket is not None:
                 try:
                     var_value = kwargs[__KEEP_VAR__][var_ticket[1]][var_ticket[2]]
                     if isinstance(var_value, str):
-                        sys_reply_complete_refactor += var_value
+                        sys_reply_complete_refactor.append(var_value)
                     elif isinstance(var_value, float):
-                        sys_reply_complete_refactor += str(round(var_value, 4))
+                        sys_reply_complete_refactor.append(str(round(var_value, 4)))
                     else:
-                        sys_reply_complete_refactor += str(var_value)
+                        sys_reply_complete_refactor.append(str(var_value))
 
                 except KeyError:
-                    sys_reply_complete_refactor += var
+                    sys_reply_complete_refactor.append(f"{var}")
             else:
                 var = var.replace(__NEXT_LINE__, "\n")
-                sys_reply_complete_refactor += var
-        return sys_reply_complete_refactor
+                sys_reply_complete_refactor.append(f"{var}")
+        return " ".join(sys_reply_complete_refactor)
 
     def run(self, **kwargs):
-        if self.is_token_pass(data=kwargs, stage_id=self.stage_id) is True:
+
+        kwargs = self.set_sys_passed_stage(kwargs,self.stage_uuid_name)
+
+        # the user had passed or not.
+        if self.had_the_token_was_pass(data=kwargs, stage_id=self.stage_id) is True:
             kwargs = self.set_sys_stage_status(kwargs, StageStatus.COMPLETE)
             return kwargs
 
+        # the user had is first time to coming
         if self.is_first_access(kwargs, self.stage_id) is True:
             kwargs = self.set_none_token_pass(data=kwargs, stage_id=self.stage_id)
             kwargs = self.set_sys_stage_status(kwargs, StageStatus.FIRST)
+
+            # random reply from welcome corpus (q1)
             sys_reply = self.__choice_a_reply__(self.sys_reply_q1)
+
             #
             sys_reply = self.replace_var_ticket_to_string(kwargs, sys_reply)
             return self.set_sys_reply(kwargs, sys_reply)
 
+        # computer core. the main flow in stage, base on static rule of stage to check rusult is pass or not.
+        # return pass_token and data
+        # pass_token: [True,  False]
+        #     True -> complete
+        #     False -> refuse
         is_fit_token, kwargs = self.is_fit_needs_n_gen_entity(kwargs)
-        if is_fit_token is False:  # q1
+        if is_fit_token is False:
+            # REFUSE FLOW
             kwargs = self.set_sys_stage_status(kwargs, StageStatus.REFUSE)
             sys_reply = self.__choice_a_reply__(self.sys_reply_q2)
 
             sys_reply = self.replace_var_ticket_to_string(kwargs, sys_reply)
             return self.set_sys_reply(kwargs, sys_reply)
 
-        elif is_fit_token is True and kwargs is not None:  # q2
+        elif is_fit_token is True:
+            # COMPLETE FLOW
+            kwargs = kwargs if kwargs is not None else {}
             kwargs = self.save_user_text(kwargs, self.stage_id, __USER_TEXT__)
-            kwargs = self.clear_user_text(kwargs)
+            if not self.keep_user_text:
+                kwargs = self.clear_user_text(kwargs)
             kwargs = self.set_true_token_pass(kwargs, stage_id=self.stage_id)
             kwargs = self.set_sys_stage_status(kwargs, StageStatus.COMPLETE)
 
             # insert ENTITY
             sys_reply = self.replace_var_ticket_to_string(kwargs, self.__choice_a_reply__(self.sys_reply_complete))
             return self.set_sys_reply(kwargs, sys_reply)
-
-        elif is_fit_token is True and kwargs is None:  # reset route
-            sys_reply = self.replace_var_ticket_to_string(kwargs, self.__choice_a_reply__(self.sys_reply_complete))
-            return self.set_sys_reply({}, sys_reply)
+        #
+        # elif is_fit_token is True and kwargs is None:  # reset route
+        #     sys_reply = self.replace_var_ticket_to_string(kwargs, self.__choice_a_reply__(self.sys_reply_complete))
+        #     return self.set_sys_reply({}, sys_reply)
 
     @staticmethod
     def __choice_a_reply__(sys_reply):

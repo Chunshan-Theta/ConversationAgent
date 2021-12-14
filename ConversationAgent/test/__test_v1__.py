@@ -1,5 +1,5 @@
 from ..LibStage import gen_multi_agent, QAStage
-from .. import mock_client_once,to_bot
+from .. import mock_client_once, to_bot
 
 bot_json = {
     "__MAIN_STAGES__": [
@@ -103,6 +103,7 @@ text = "hi"
 reply_text, data = mock_client_once(agent, text, data)
 print(f"data: {data}")
 print(f"reply_text: {reply_text}")
+assert reply_text == ['請問是要做哪種票種呢？'], f"ASSERT ERROR: {reply_text}. test_v1_02"
 
 #
 text = "月票"
@@ -456,7 +457,7 @@ bot_json = {
     ],
     "_問答_": [
         {
-            "stage_type": __NEW_QUESTIONANSWER__,
+            "stage_type": "__QA_STAGE__",
             "corpus": {
                 "廁所在哪裡": "這裡沒有廁所",
                 "詢問處在哪裡": "這裡沒有詢問處",
@@ -594,4 +595,3 @@ text = "附近有廁所嗎"
 reply_text, data = to_bot(agent, text, data)
 print(f"data: {data}")
 print(f"reply_text: {reply_text}")
-
