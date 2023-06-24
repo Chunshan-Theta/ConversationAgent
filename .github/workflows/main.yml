@@ -32,6 +32,7 @@ jobs:
       - name: Run tests with coverage
         run: python3 -m pytest  __tests__/*.py --cov=ConversationAgent
   release:
+    needs: build
     runs-on: ubuntu-latest
 
     steps:
