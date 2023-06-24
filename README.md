@@ -18,7 +18,7 @@ python3 -m unittest __tests__/*.py
 ## set env
 ```
 # python 3.10
-python3 -m venv .venv
+python3 -m venv .venv && \
 source .venv/bin/activate
 ```
 
