@@ -1,3 +1,4 @@
 ConversationAgent.egg-info/
 dist/
 *.pyc
+.venv

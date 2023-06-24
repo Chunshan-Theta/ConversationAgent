@@ -6,6 +6,7 @@ from .__agent__ import Agent
 from .__stage__ import Stage, __USER_TEXT__, __SYS_REPLY__, StageStatus, \
     __LOCAL_VAR_LABEL__, __LOCAL_VAR_VALUE__
 
+__version__ = "0.1.10"
 __MOCK_STAGES_LABEL_1__ = "__MOCK_STAGES_LABEL_1__"
 
 
