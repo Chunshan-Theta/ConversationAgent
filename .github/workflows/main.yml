@@ -25,3 +25,9 @@ jobs:
     
       - name: Run tests
         run: python3 -m unittest __tests__/*.py
+
+      - name: Install cov test dependencies
+        run: pip install pytest-cov  
+
+      - name: Run tests with coverage
+        run: python3 -m pytest  __tests__/*.py --cov=ConversationAgent
