@@ -109,13 +109,12 @@ class Stage:
     @staticmethod
     # def is_var_label_human(label_string):
     def get_var_name_from_string(label_string: str) -> str | None:
-        # head: str="%%"
-        # tail: str="%%"
-        # return None if re.match(f"^{head}.*{tail}$", label_string) is None else label_string[len(head):-1*len(tail)]
-        return None if re.match(f"^%%.*%%$", label_string) is None else label_string[2:-2]
+        head: str="%%"
+        tail: str="%%"
+        return None if re.match(f"^{head}.*{tail}$", label_string) is None else label_string[len(head):-1*len(tail)]
 
     @classmethod
-    def get_default_var_ticket(cls, label: str) -> str:
+    def get_default_var_ticket(cls, label: str) -> Dict[str, str]:
         return cls.get_var_ticket(__KEEP_DEFAULT_VAR__, label)
 
     def set_default_var(self, data, label, save_text):
@@ -127,10 +126,14 @@ class Stage:
         return self.get_var(data, __KEEP_DEFAULT_VAR__, label)
 
     @staticmethod
-    def get_var_ticket(stage_id: str, label: str) -> str:
+    def get_var_ticket(stage_id: str, label: str) -> Dict[str, str]:
         assert "\t" not in stage_id
         assert "\t" not in label
-        return f"var\t{stage_id}\t{label}\tvar"
+        # return f"var\t{stage_id}\t{label}\tvar"
+        return {
+            "stage_id": stage_id,
+            "label": label
+        }
 
     @classmethod
     def set_var(cls, data, stage_id, label, save_text):
@@ -167,52 +170,43 @@ class Stage:
 
     @classmethod
     def replace_var_ticket_to_string(cls, kwargs: Dict[str, Any], sys_reply: str) -> str:
-        # print(f"kwargs: {kwargs}")
-        # print(f"sys_reply: {sys_reply}")
+
         __NEXT_LINE__ = "||n||"
-        # insert ENTITY
-        sys_reply_complete_refactor: List[str] = []
-        ##
-        sys_reply = sys_reply.replace("\n", __NEXT_LINE__)
+
+        # 
+        completed_texts: List[str] = []
+        source_sent = sys_reply.replace("\n", __NEXT_LINE__)
 
         #
-        print(f"sys_reply: {sys_reply}")
-        var_ticket: None | List[str] = None
-        for var in sys_reply.strip().split(" "):
-            if var == " ":
-                continue
+        for text in source_sent.strip().split(" "):
 
 
             # check the var is var ticket or not.
-            var = var.strip()
-            var_ticket_name: str | None = cls.get_var_name_from_string(var)
-            # print(f"\t\tvar_ticket_name: {var_ticket_name}")
+            text = text.strip()
+            var_ticket_name: str | None = cls.get_var_name_from_string(text)
             if var_ticket_name is None:
-                var: str = var.replace(__NEXT_LINE__, "\n")
-                sys_reply_complete_refactor.append(f"{var}")
+                normal_text: str = text.replace(__NEXT_LINE__, "\n")
+                completed_texts.append(f"{normal_text}")
                 continue
 
-            var_ticket = cls.get_default_var_ticket(var_ticket_name).split("\t")
-
-
+            var_ticket_info = cls.get_default_var_ticket(var_ticket_name)
+            
+            
             # replace
-            assert var_ticket is not None
-
+            stage_id : str = var_ticket_info['stage_id']
+            var_label : str = var_ticket_info['label']
             try:
-                var_value: Any = kwargs[__KEEP_VAR__][var_ticket[1]][var_ticket[2]]
-                print(f"\t\tvar_value: {var_value}")
-                if isinstance(var_value, str):
-                    sys_reply_complete_refactor.append(var_value)
-                elif isinstance(var_value, float):
-                    sys_reply_complete_refactor.append(str(round(var_value, 4)))
-                else:
-                    sys_reply_complete_refactor.append(str(var_value)) 
-
+                var_value: Any = kwargs[__KEEP_VAR__][stage_id][var_label]
             except KeyError:
-                sys_reply_complete_refactor.append(f"{var}")
+                raise KeyError(f"Not Found Var in Memory: {kwargs[__KEEP_VAR__][{stage_id}][{var_label}]}" )
+            
+            if isinstance(var_value, float):
+                completed_texts.append(str(round(var_value, 4)))
+            else:
+                completed_texts.append(str(var_value)) 
+
                 
-        finallySent: str = " ".join(sys_reply_complete_refactor)
-        print(f"\t\tfinallySent: {finallySent}")
+        finallySent: str = " ".join(completed_texts)
         return finallySent
 
     def run(self, **kwargs):

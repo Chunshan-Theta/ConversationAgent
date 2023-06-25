@@ -112,20 +112,22 @@ class TestREStage(unittest.TestCase):
         reply_text, data = mock_client_once(agent, text, data)
         # print(f"data: {data}")
         # print(f"reply_text: {reply_text}")
-        # assert reply_text == ['請問是要做哪種票種呢？'], f"ASSERT ERROR: {reply_text}. test_v1_02"
+        assert reply_text == ['請問是要做哪種票種呢？'], f"ASSERT ERROR: {reply_text}. test_v1_02"
 
         #
         text = "月票"
         reply_text, data = mock_client_once(agent, text, data)
         # print(f"data: {data}")
         # print(f"reply_text: {reply_text}")
-        # assert reply_text == ['好的，將開始訂購 月票 月票', '月票的價格為 1280元，是否確認？'], f"ASSERT ERROR: {reply_text}. test_v1_02"
+        assert reply_text == ['好的，將開始訂購 月票', '月票的價格為 1280元，是否確認？'], f"ASSERT ERROR: {reply_text}. test_v1_02"
 
         #
         text = "好"
         reply_text, data = mock_client_once(agent, text, data)
         # print(f"data: {data}")
         # print(f"reply_text: {reply_text}")
+        assert reply_text == ['好的，確認您使用 月票 車廂的意願為 『 好 』，\n            感謝您的使用。\n'], f"ASSERT ERROR: {reply_text}. test_v1_02"
+
 
 
 
