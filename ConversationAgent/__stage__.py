@@ -1,7 +1,9 @@
+from __future__ import annotations
 import json
 import uuid
 import re
 import random
+from typing import Dict, Any, List
 
 __USER_TEXT__ = "USER_TEXT"
 __PASS_TOKEN__ = "PASS_TOKEN"
@@ -106,8 +108,11 @@ class Stage:
 
     @staticmethod
     # def is_var_label_human(label_string):
-    def get_var_name_from_string(label_string):
-        return None if re.match("^%%.*%%$", label_string) is None else label_string[2:-2]
+    def get_var_name_from_string(label_string: str) -> str | None:
+        # head: str="%%"
+        # tail: str="%%"
+        # return None if re.match(f"^{head}.*{tail}$", label_string) is None else label_string[len(head):-1*len(tail)]
+        return None if re.match(f"^%%.*%%$", label_string) is None else label_string[2:-2]
 
     @classmethod
     def get_default_var_ticket(cls, label: str) -> str:
@@ -122,7 +127,7 @@ class Stage:
         return self.get_var(data, __KEEP_DEFAULT_VAR__, label)
 
     @staticmethod
-    def get_var_ticket(stage_id: str, label: str):
+    def get_var_ticket(stage_id: str, label: str) -> str:
         assert "\t" not in stage_id
         assert "\t" not in label
         return f"var\t{stage_id}\t{label}\tvar"
@@ -161,43 +166,54 @@ class Stage:
         return data
 
     @classmethod
-    def replace_var_ticket_to_string(cls, kwargs, sys_reply):
+    def replace_var_ticket_to_string(cls, kwargs: Dict[str, Any], sys_reply: str) -> str:
         # print(f"kwargs: {kwargs}")
         # print(f"sys_reply: {sys_reply}")
         __NEXT_LINE__ = "||n||"
         # insert ENTITY
-        sys_reply_complete_refactor = []
+        sys_reply_complete_refactor: List[str] = []
         ##
         sys_reply = sys_reply.replace("\n", __NEXT_LINE__)
 
         #
-        var_ticket = None
-        for var in sys_reply.split(" "):
+        print(f"sys_reply: {sys_reply}")
+        var_ticket: None | List[str] = None
+        for var in sys_reply.strip().split(" "):
+            if var == " ":
+                continue
+
 
             # check the var is var ticket or not.
-            var_ticket_name = cls.get_var_name_from_string(var)
-            if var_ticket_name is not None:
-                # if it is a var ticket, then return:
-                # ->: var \t KEEP_DEFAULT_VAR \t {var_ticket_human} \t var"
-                var_ticket = cls.get_default_var_ticket(var_ticket_name).split("\t")
+            var = var.strip()
+            var_ticket_name: str | None = cls.get_var_name_from_string(var)
+            # print(f"\t\tvar_ticket_name: {var_ticket_name}")
+            if var_ticket_name is None:
+                var: str = var.replace(__NEXT_LINE__, "\n")
+                sys_reply_complete_refactor.append(f"{var}")
+                continue
+
+            var_ticket = cls.get_default_var_ticket(var_ticket_name).split("\t")
+
 
             # replace
-            if var_ticket is not None:
-                try:
-                    var_value = kwargs[__KEEP_VAR__][var_ticket[1]][var_ticket[2]]
-                    if isinstance(var_value, str):
-                        sys_reply_complete_refactor.append(var_value)
-                    elif isinstance(var_value, float):
-                        sys_reply_complete_refactor.append(str(round(var_value, 4)))
-                    else:
-                        sys_reply_complete_refactor.append(str(var_value))
+            assert var_ticket is not None
 
-                except KeyError:
-                    sys_reply_complete_refactor.append(f"{var}")
-            else:
-                var = var.replace(__NEXT_LINE__, "\n")
+            try:
+                var_value: Any = kwargs[__KEEP_VAR__][var_ticket[1]][var_ticket[2]]
+                print(f"\t\tvar_value: {var_value}")
+                if isinstance(var_value, str):
+                    sys_reply_complete_refactor.append(var_value)
+                elif isinstance(var_value, float):
+                    sys_reply_complete_refactor.append(str(round(var_value, 4)))
+                else:
+                    sys_reply_complete_refactor.append(str(var_value)) 
+
+            except KeyError:
                 sys_reply_complete_refactor.append(f"{var}")
-        return " ".join(sys_reply_complete_refactor)
+                
+        finallySent: str = " ".join(sys_reply_complete_refactor)
+        print(f"\t\tfinallySent: {finallySent}")
+        return finallySent
 
     def run(self, **kwargs):
 

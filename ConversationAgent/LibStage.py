@@ -1,9 +1,11 @@
+from __future__ import annotations
 from .__stage__ import Stage, __USER_TEXT__, StageType
 from .__agent__ import Agent, MultiAgent
 from .__tool__ import get_value_from_dict_by_multi_name, compute_by_string
 from .jieba_zh import analyse
 import re
 import random
+from typing import Dict, Any, List
 
 __RE_STAGE__ = "__RE_STAGE__"
 __QA_STAGE__ = "__QA_STAGE__"
@@ -352,10 +354,10 @@ __LIB_STAGES__ = {
 }
 
 
-def gen_multi_agent(stage_dict: dict, stages_classes=None):
+def gen_multi_agent(stage_dict: Dict[str, Any], stages_classes: None | Dict[str, Any] = None) -> MultiAgent:
     if stages_classes is None:
         stages_classes = __LIB_STAGES__
-    stages = {}
+    stages:Dict[str, List[Stage]] = {}
     for stages_label, stage_jsons in stage_dict.items():
         stages[stages_label] = []
         for stage_json in stage_jsons:
