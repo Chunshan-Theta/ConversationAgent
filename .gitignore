@@ -2,3 +2,5 @@ ConversationAgent.egg-info/
 dist/
 *.pyc
 .venv
+.coverage
+.pytest_cache
