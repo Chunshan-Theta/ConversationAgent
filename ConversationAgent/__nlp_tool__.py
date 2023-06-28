@@ -1,4 +1,4 @@
-from typing import NamedTuple, List
+from typing import NamedTuple, List, Tuple
 
 class SimilarResult(NamedTuple):
     sentence: str
@@ -17,17 +17,17 @@ def result_format(sentence: str,corpus: List[str], ans:str, score:float) -> Simi
 
 def MED(s1: str, s2: str) -> float:
     # Create a matrix of size (len(s1) + 1) x (len(s2) + 1)
-    s1 = [w for w in s1]
-    s2 = [w for w in s2]
-    if len(s1) <= len(s2):
-      s1,s2 = s2,s1
+    s1a = [w for w in s1]
+    s2a = [w for w in s2]
+    if len(s1a) <= len(s2a):
+      s1a,s2a = s2a,s1a
 
-    for w in s2:
-      if w in s1:
-        del s1[s1.index(w)]
+    for w in s2a:
+      if w in s1a:
+        del s1a[s1a.index(w)]
 
     # Return the Levenshtein distance
-    score= len(s1)
+    score= len(s1a)
     if score == 0:
       return 1
     return (1 / score)-0.0000001
@@ -35,7 +35,7 @@ def MED(s1: str, s2: str) -> float:
 
 
 def similar_text_distance(sentence: str, corpus: List[str]) -> SimilarResult:
-    socres: List[Tuple(str, float)] = []
+    socres: List[Tuple[str, float]] = []
     for c in corpus:
         distance = MED(sentence, c)
         socres.append((c, distance))
