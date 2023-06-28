@@ -10,7 +10,7 @@ class TestREStage(unittest.TestCase):
         super().__init__(methodName)
         
 
-    def test_add(self):
+    def test_ticket(self):
         bot_json: Dict[str, Any] = {
             "__MAIN_STAGES__": [
                 {

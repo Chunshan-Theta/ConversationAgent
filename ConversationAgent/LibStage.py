@@ -6,6 +6,8 @@ from .jieba_zh import analyse
 import re
 import random
 from typing import Dict, Any, List
+from .__nlp_tool__ import similar_text_distance, SimilarResult
+
 
 __RE_STAGE__ = "__RE_STAGE__"
 __QA_STAGE__ = "__QA_STAGE__"
@@ -22,7 +24,7 @@ __COMPLETE_SAYING_LABELS__ = ["__SYS_COMPLETE__", "sys_reply_complete", "sys_com
 __DISABLE_WELCOME_LABEL__ = ["__DISABLE_WELCOME__", "__DISSABLE_Q1__", "DISSABLE_WELCOME"]
 __DISABLE_REFUSE_LABEL__ = ["__DISABLE_REFUSE__"]
 
-from .nlp_tool import similar
+
 
 
 class QAStage(Stage):
@@ -67,8 +69,8 @@ class QAStage(Stage):
         self.disable_refuse_question = get_value_from_dict_by_multi_name(d=data, names=__DISABLE_REFUSE_LABEL__,
                                                                          default=False)
 
-    def __request_similar_api__(self, text, corpus):
-        return similar(text, corpus)
+    def __request_similar_api__(self, text, corpus) -> SimilarResult:
+        return similar_text_distance(text, corpus)
 
     def __encode_corpus__(self):
         source_corpus = list(self.corpus.keys())
@@ -83,15 +85,18 @@ class QAStage(Stage):
 
     def is_fit_needs_n_gen_entity(self, kwargs) -> (bool, dict):
         user_text = kwargs.get(__USER_TEXT__, "")
-
+        
         corpus, new_dict_corpus = self.__encode_corpus__()
 
-        responds = self.__request_similar_api__(user_text, corpus)
-        worker_response = responds["worker response"]["ans"]
+
+        # print(f"user_text: {user_text}")
+        # print(f"corpus: {corpus}")
+        responds: SimilarResult = self.__request_similar_api__(user_text, corpus)
+        worker_response = responds.ans
         best_res_content = self.__decode_corpus__(worker_response, new_dict_corpus)
 
         ##
-        best_res_score = worker_response[0][1]
+        best_res_score = responds.score
         best_res_responds = self.corpus[best_res_content] if best_res_content in self.corpus else None
         if isinstance(best_res_responds,list):
             best_res_responds = random.choice(best_res_responds)
