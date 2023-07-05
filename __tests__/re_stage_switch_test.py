@@ -166,10 +166,15 @@ class TestREStage(unittest.TestCase):
         # #
         text = "附近有廁所嗎"
         reply_text, data = to_bot(agent, text, data)
-        # print(f"data: {data}")
-        # print(f"reply_text: {reply_text}")
+        self.assertTrue(reply_text[-1]=='死亡路線')
 
 
+        #
+        text = "hi"
+        reply_text, data = to_bot(agent, text, {})
+        text = "我想買票"
+        reply_text, data = to_bot(agent, text, data)
+        self.assertTrue(data["KEEP_VAR"]["DEFAULT_VAR"]["selected_service"]=='買票')
 
 
 
