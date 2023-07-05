@@ -1,6 +1,6 @@
 from . import Stage, Agent, mock_client, mock_client_human, __USER_TEXT__
 import re
-
+from typing import Tuple
 
 __HELLO_STAGE__ = "HELLO_STAGE"
 __CLEAR_STAGE__ = "CLEAR_STAGE"
@@ -104,7 +104,7 @@ class OrderEndStage(Stage):
         self.sys_reply_q2 = "請說站名，例如『板橋火車站』"
         self.sys_reply_complete = f"好的，您將從 {self.get_default_var_label(self.OUT_BOARD)} 下車"
 
-    def is_fit_needs_n_gen_entity(self, kwargs) -> (bool, dict):
+    def is_fit_needs_n_gen_entity(self, kwargs) -> Tuple[bool, dict]:
         user_text = kwargs.get(__USER_TEXT__, "")
         if fit_re(".*車站.*", user_text):
             kwargs = self.set_default_var(kwargs, self.OUT_BOARD, user_text)
@@ -124,7 +124,7 @@ class OrderConfirmStage(Stage):
     def is_first_access(data, stage_id):
         return False
 
-    def is_fit_needs_n_gen_entity(self, kwargs) -> (bool, dict):
+    def is_fit_needs_n_gen_entity(self, kwargs) -> Tuple[bool, dict]:
         return True, kwargs
 
 

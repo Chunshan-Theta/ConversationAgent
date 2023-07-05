@@ -40,7 +40,6 @@ def similar_text_distance(sentence: str, corpus: List[str]) -> SimilarResult:
         distance = MED(sentence, c)
         socres.append((c, distance))
     sorted_data = sorted(socres, key=lambda x: x[1])
-    # print(sorted_data)
     return result_format(sentence, corpus, sorted_data[-1][0], sorted_data[-1][1])
 #
 # corpus= [

@@ -3,7 +3,9 @@ import json
 import uuid
 import re
 import random
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple
+from .__types__ import Memory
+
 
 __USER_TEXT__ = "USER_TEXT"
 __PASS_TOKEN__ = "PASS_TOKEN"
@@ -97,7 +99,7 @@ class Stage:
         data[__PASS_TOKEN__][stage_id] = True
         return data
 
-    def is_fit_needs_n_gen_entity(self, kwargs) -> (bool, dict):
+    def is_fit_needs_n_gen_entity(self, kwargs) -> Tuple[bool, dict]:
         kwargs = self.set_default_var(kwargs, __LOCAL_VAR_LABEL__, __LOCAL_VAR_VALUE__)
         # if want to reset data, return (True,None) to replace to (True,kwargs)
         return True, kwargs
@@ -121,8 +123,9 @@ class Stage:
         data = self.set_var(data, self.stage_id, label, save_text)
         data = self.set_var(data, __KEEP_DEFAULT_VAR__, label, save_text)
         return data
-
-    def get_default_var(self, data, label) -> any:
+    
+    @classmethod
+    def get_default_var(self, data: Memory, label: str) -> any:
         return self.get_var(data, __KEEP_DEFAULT_VAR__, label)
 
     @staticmethod
