@@ -1,8 +1,9 @@
 import json
 import uuid
 import re
+from typing import Dict, Any, Tuple, List
 
-from .__agent__ import Agent
+from .__agent__ import Agent, SingleThreadAgent
 from .__stage__ import Stage, __USER_TEXT__, __SYS_REPLY__, StageStatus, \
     __LOCAL_VAR_LABEL__, __LOCAL_VAR_VALUE__
 
@@ -30,7 +31,7 @@ def mock_client(agent, says, show_data=True, show_user_text=True):
             print("\t系統資料:", data)
 
 
-def mock_client_human(agent):
+def mock_client_human(agent: SingleThreadAgent):
     data = {}
     while True:
         s = input("請輸入：")
@@ -41,10 +42,10 @@ def mock_client_human(agent):
         print("系統:", reply_text)
 
 
-def mock_client_once(agent: Agent, text: str, data: dict):
+def mock_client_once(agent: SingleThreadAgent, text: str, data: Dict[str, Any]) -> Tuple[List[str], Dict[str, Any]]:
     data[__USER_TEXT__] = text
     return agent.run_all_stages(**data)
 
 
-def to_bot(agent: Agent, text: str, data: dict):
+def to_bot(agent: Agent, text: str, data: Dict[str, Any]) -> Tuple[List[str], Dict[str, Any]]:
     return mock_client_once(agent, text, data)

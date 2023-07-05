@@ -24,7 +24,7 @@ source .venv/bin/activate
 
 ## delete env
 ```
-rm -r .venv
-rm -r __tests__/__pycache__
+rm -r .venv && \
+rm -r __tests__/__pycache__ && \
 rm -r ConversationAgent.egg-info
 ```

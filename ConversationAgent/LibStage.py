@@ -1,9 +1,13 @@
+from __future__ import annotations
 from .__stage__ import Stage, __USER_TEXT__, StageType
 from .__agent__ import Agent, MultiAgent
 from .__tool__ import get_value_from_dict_by_multi_name, compute_by_string
 from .jieba_zh import analyse
 import re
 import random
+from typing import Dict, Any, List, Tuple
+from .__nlp_tool__ import similar_text_distance, SimilarResult
+
 
 __RE_STAGE__ = "__RE_STAGE__"
 __QA_STAGE__ = "__QA_STAGE__"
@@ -20,7 +24,7 @@ __COMPLETE_SAYING_LABELS__ = ["__SYS_COMPLETE__", "sys_reply_complete", "sys_com
 __DISABLE_WELCOME_LABEL__ = ["__DISABLE_WELCOME__", "__DISSABLE_Q1__", "DISSABLE_WELCOME"]
 __DISABLE_REFUSE_LABEL__ = ["__DISABLE_REFUSE__"]
 
-from .nlp_tool import similar
+
 
 
 class QAStage(Stage):
@@ -65,31 +69,34 @@ class QAStage(Stage):
         self.disable_refuse_question = get_value_from_dict_by_multi_name(d=data, names=__DISABLE_REFUSE_LABEL__,
                                                                          default=False)
 
-    def __request_similar_api__(self, text, corpus):
-        return similar(text, corpus)
+    def __request_similar_api__(self, text, corpus) -> SimilarResult:
+        return similar_text_distance(text, corpus)
 
     def __encode_corpus__(self):
         source_corpus = list(self.corpus.keys())
         dict_corpus = {self.__keyword__(self.__stop_word__(s)): s for s in source_corpus}
         return list(self.corpus.keys() if not self.refactor_questions else dict_corpus.keys()), dict_corpus
 
-    def __decode_corpus__(self, worker_response, new_dict_corpus):
-        best_res_content = str(worker_response[0][0])
+    def __decode_corpus__(self, worker_response: str, new_dict_corpus: Dict[str, Any]):
+        best_res_content = str(worker_response)
         if self.refactor_questions:
             best_res_content = new_dict_corpus[best_res_content] if best_res_content in new_dict_corpus else '0'
         return best_res_content
 
-    def is_fit_needs_n_gen_entity(self, kwargs) -> (bool, dict):
+    def is_fit_needs_n_gen_entity(self, kwargs) -> Tuple[bool, dict]:
         user_text = kwargs.get(__USER_TEXT__, "")
-
+        
         corpus, new_dict_corpus = self.__encode_corpus__()
 
-        responds = self.__request_similar_api__(user_text, corpus)
-        worker_response = responds["worker response"]["ans"]
+
+        # print(f"user_text: {user_text}")
+        # print(f"corpus: {corpus}")
+        responds: SimilarResult = self.__request_similar_api__(user_text, corpus)
+        worker_response = responds.ans
         best_res_content = self.__decode_corpus__(worker_response, new_dict_corpus)
 
         ##
-        best_res_score = worker_response[0][1]
+        best_res_score = responds.score
         best_res_responds = self.corpus[best_res_content] if best_res_content in self.corpus else None
         if isinstance(best_res_responds,list):
             best_res_responds = random.choice(best_res_responds)
@@ -193,7 +200,7 @@ class REStage(Stage):
                 entities.append(r)
         return entities
 
-    def is_fit_needs_n_gen_entity(self, kwargs) -> (bool, dict):
+    def is_fit_needs_n_gen_entity(self, kwargs) -> Tuple[bool, dict]:
         user_text = kwargs.get(__USER_TEXT__, "")
         pass_token = True
 
@@ -272,7 +279,7 @@ class LibSwitchStage(Stage):
 
         raise RuntimeError(f"Not Found Path: {stages_searched}")
 
-    def is_fit_needs_n_gen_entity(self, kwargs) -> (bool, dict):
+    def is_fit_needs_n_gen_entity(self, kwargs) -> Tuple[bool, dict]:
         raise RuntimeError
 
 
@@ -307,7 +314,7 @@ class ClassifyStage(REStage):
         self.__Classify_THRESHOLD__ = data.get(self.__Classify_THRESHOLD__, 0.5)
         self.__SAVED_NAME__ = data.get("__SAVED_NAME__", {})
 
-    def is_fit_needs_n_gen_entity(self, kwargs) -> (bool, dict):
+    def is_fit_needs_n_gen_entity(self, kwargs) -> Tuple[bool, dict]:
 
         user_text = kwargs.get(__USER_TEXT__, "")
         pass_token = False
@@ -352,10 +359,10 @@ __LIB_STAGES__ = {
 }
 
 
-def gen_multi_agent(stage_dict: dict, stages_classes=None):
+def gen_multi_agent(stage_dict: Dict[str, Any], stages_classes: None | Dict[str, Any] = None) -> MultiAgent:
     if stages_classes is None:
         stages_classes = __LIB_STAGES__
-    stages = {}
+    stages:Dict[str, List[Stage]] = {}
     for stages_label, stage_jsons in stage_dict.items():
         stages[stages_label] = []
         for stage_json in stage_jsons:

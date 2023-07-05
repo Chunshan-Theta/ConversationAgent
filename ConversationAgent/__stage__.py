@@ -1,14 +1,18 @@
+from __future__ import annotations
 import json
 import uuid
 import re
 import random
+from typing import Dict, Any, List, Tuple
+from .__types__ import Memory
+
 
 __USER_TEXT__ = "USER_TEXT"
 __PASS_TOKEN__ = "PASS_TOKEN"
 __SYS_REPLY__ = "SYS_REPLY"
 __SYS_STAGE__ = "SYS_STAGE"
 __KEEP_VAR__ = "KEEP_VAR"
-__KEEP_DEFAULT_VAR__ = "KEEP_DEFAULT_VAR"
+__KEEP_DEFAULT_VAR__ = "DEFAULT_VAR"
 __PASSED_STAGES__ = "__PASSED_STAGES__"
 __LOCAL_VAR_LABEL__ = "__LOCAL_VAR_LABEL__"
 __LOCAL_VAR_VALUE__ = "__LOCAL_VAR_VALUE__"
@@ -95,7 +99,7 @@ class Stage:
         data[__PASS_TOKEN__][stage_id] = True
         return data
 
-    def is_fit_needs_n_gen_entity(self, kwargs) -> (bool, dict):
+    def is_fit_needs_n_gen_entity(self, kwargs) -> Tuple[bool, dict]:
         kwargs = self.set_default_var(kwargs, __LOCAL_VAR_LABEL__, __LOCAL_VAR_VALUE__)
         # if want to reset data, return (True,None) to replace to (True,kwargs)
         return True, kwargs
@@ -106,26 +110,33 @@ class Stage:
 
     @staticmethod
     # def is_var_label_human(label_string):
-    def get_var_name_from_string(label_string):
-        return None if re.match("^%%.*%%$", label_string) is None else label_string[2:-2]
+    def get_var_name_from_string(label_string: str) -> str | None:
+        head: str="%%"
+        tail: str="%%"
+        return None if re.match(f"^{head}.*{tail}$", label_string) is None else label_string[len(head):-1*len(tail)]
 
     @classmethod
-    def get_default_var_ticket(cls, label: str) -> str:
+    def get_default_var_ticket(cls, label: str) -> Dict[str, str]:
         return cls.get_var_ticket(__KEEP_DEFAULT_VAR__, label)
 
     def set_default_var(self, data, label, save_text):
         data = self.set_var(data, self.stage_id, label, save_text)
         data = self.set_var(data, __KEEP_DEFAULT_VAR__, label, save_text)
         return data
-
-    def get_default_var(self, data, label) -> any:
+    
+    @classmethod
+    def get_default_var(self, data: Memory, label: str) -> any:
         return self.get_var(data, __KEEP_DEFAULT_VAR__, label)
 
     @staticmethod
-    def get_var_ticket(stage_id: str, label: str):
+    def get_var_ticket(stage_id: str, label: str) -> Dict[str, str]:
         assert "\t" not in stage_id
         assert "\t" not in label
-        return f"var\t{stage_id}\t{label}\tvar"
+        # return f"var\t{stage_id}\t{label}\tvar"
+        return {
+            "stage_id": stage_id,
+            "label": label
+        }
 
     @classmethod
     def set_var(cls, data, stage_id, label, save_text):
@@ -161,43 +172,45 @@ class Stage:
         return data
 
     @classmethod
-    def replace_var_ticket_to_string(cls, kwargs, sys_reply):
-        # print(f"kwargs: {kwargs}")
-        # print(f"sys_reply: {sys_reply}")
+    def replace_var_ticket_to_string(cls, kwargs: Dict[str, Any], sys_reply: str) -> str:
+
         __NEXT_LINE__ = "||n||"
-        # insert ENTITY
-        sys_reply_complete_refactor = []
-        ##
-        sys_reply = sys_reply.replace("\n", __NEXT_LINE__)
+
+        # 
+        completed_texts: List[str] = []
+        source_sent = sys_reply.replace("\n", __NEXT_LINE__)
 
         #
-        var_ticket = None
-        for var in sys_reply.split(" "):
+        for text in source_sent.strip().split(" "):
+
 
             # check the var is var ticket or not.
-            var_ticket_name = cls.get_var_name_from_string(var)
-            if var_ticket_name is not None:
-                # if it is a var ticket, then return:
-                # ->: var \t KEEP_DEFAULT_VAR \t {var_ticket_human} \t var"
-                var_ticket = cls.get_default_var_ticket(var_ticket_name).split("\t")
+            text = text.strip()
+            var_ticket_name: str | None = cls.get_var_name_from_string(text)
+            if var_ticket_name is None:
+                normal_text: str = text.replace(__NEXT_LINE__, "\n")
+                completed_texts.append(f"{normal_text}")
+                continue
 
+            var_ticket_info = cls.get_default_var_ticket(var_ticket_name)
+            
+            
             # replace
-            if var_ticket is not None:
-                try:
-                    var_value = kwargs[__KEEP_VAR__][var_ticket[1]][var_ticket[2]]
-                    if isinstance(var_value, str):
-                        sys_reply_complete_refactor.append(var_value)
-                    elif isinstance(var_value, float):
-                        sys_reply_complete_refactor.append(str(round(var_value, 4)))
-                    else:
-                        sys_reply_complete_refactor.append(str(var_value))
-
-                except KeyError:
-                    sys_reply_complete_refactor.append(f"{var}")
+            stage_id : str = var_ticket_info['stage_id']
+            var_label : str = var_ticket_info['label']
+            try:
+                var_value: Any = kwargs[__KEEP_VAR__][stage_id][var_label]
+            except KeyError:
+                raise KeyError(f"Not Found Var in Memory: {kwargs[__KEEP_VAR__][{stage_id}][{var_label}]}" )
+            
+            if isinstance(var_value, float):
+                completed_texts.append(str(round(var_value, 4)))
             else:
-                var = var.replace(__NEXT_LINE__, "\n")
-                sys_reply_complete_refactor.append(f"{var}")
-        return " ".join(sys_reply_complete_refactor)
+                completed_texts.append(str(var_value)) 
+
+                
+        finallySent: str = " ".join(completed_texts)
+        return finallySent
 
     def run(self, **kwargs):
 
