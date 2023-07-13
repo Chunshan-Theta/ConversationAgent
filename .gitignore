@@ -12,3 +12,4 @@ replit.nix
 poetry.lock
 pyproject.toml
 .breakpoints
+.config

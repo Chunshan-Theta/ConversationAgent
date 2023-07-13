@@ -2,9 +2,8 @@ import json
 import uuid
 import re
 from typing import Tuple, List, Dict, Any
-from .__stage__ import Stage, __USER_TEXT__, __SYS_REPLY__, StageStatus, \
-    __LOCAL_VAR_LABEL__, __LOCAL_VAR_VALUE__, StageType, __PASS_TOKEN__, __KEEP_VAR__, \
-    __KEEP_DEFAULT_VAR__
+from .__stage__ import Stage, StageStatus, StageType
+from .types.static import __USER_TEXT__, __SYS_REPLY__, __LOCAL_VAR_LABEL__, __LOCAL_VAR_VALUE__, __PASS_TOKEN__, __KEEP_VAR__, __KEEP_DEFAULT_VAR__
 
 
 class SingleThreadAgent:

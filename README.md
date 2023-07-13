@@ -15,11 +15,16 @@ pip install -e .
 python3 -m unittest __tests__/*.py
 ```
 
+## unittest - coverage
+```
+pip install pytest-cov
+python3 -m pytest  __tests__/*.py --cov=ConversationAgent
+```
+
 ## set env
 ```
 # python 3.10
-python3 -m venv .venv && \
-source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 ```
 
 ## delete env

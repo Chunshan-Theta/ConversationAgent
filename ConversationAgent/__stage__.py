@@ -4,7 +4,7 @@ import uuid
 import re
 import random
 from typing import Dict, Any, List, Tuple
-from .__types__ import Memory
+from .types.memory import Memory
 
 
 __USER_TEXT__ = "USER_TEXT"
