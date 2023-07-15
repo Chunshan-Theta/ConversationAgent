@@ -64,7 +64,8 @@ class QAStage(Stage):
         self.refactor_questions = data.get(self.__REFACTOR_QUESTION__, False)
 
         if get_value_from_dict_by_multi_name(d=data, names=__DISABLE_WELCOME_LABEL__, default=False):
-            self.is_first_access = self.disabel_is_first_access
+            # self.is_first_access = self.disabel_is_first_access
+          self.switch_welcome = False
 
         self.disable_refuse_question = get_value_from_dict_by_multi_name(d=data, names=__DISABLE_REFUSE_LABEL__,
                                                                          default=False)
@@ -134,10 +135,6 @@ class QAStage(Stage):
         return pass_token, kwargs
 
     @staticmethod
-    def disabel_is_first_access(kwargs, stage_id):
-        return False
-
-    @staticmethod
     def __stop_word__(text, pronouns=True, common_skip=True, road_name=True, symbol=True):
         text = text.replace(" ", "")
         filter_set = []
@@ -180,14 +177,12 @@ class REStage(Stage):
                                                                     names=__COMPLETE_SAYING_LABELS__)
         self.is_fits = data.get("is_fits", [])
         if get_value_from_dict_by_multi_name(d=data, names=__DISABLE_WELCOME_LABEL__, default=False):
-            self.is_first_access = self.disabel_is_first_access
+            # self.is_first_access = self.disabel_is_first_access
+            self.switch_welcome = False
 
         self.disable_refuse_question = get_value_from_dict_by_multi_name(d=data, names=__DISABLE_REFUSE_LABEL__,
                                                                          default=False)
 
-    @staticmethod
-    def disabel_is_first_access(kwargs, stage_id):
-        return False
 
     @staticmethod
     def __get_entity__(rule, text):

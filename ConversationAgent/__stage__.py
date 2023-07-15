@@ -5,29 +5,10 @@ import re
 import random
 from typing import Dict, Any, List, Tuple
 from .types.memory import Memory
+from .types.stage import StageStatus, StageType
+from .types.static import __USER_TEXT__, __PASS_TOKEN__, __SYS_REPLY__, __SYS_STAGE__, __KEEP_VAR__, __KEEP_DEFAULT_VAR__, __PASSED_STAGES__, __LOCAL_VAR_LABEL__, __LOCAL_VAR_VALUE__
+from .__memory__ import StageStatusOperation, StagePassTokenOperation
 
-
-__USER_TEXT__ = "USER_TEXT"
-__PASS_TOKEN__ = "PASS_TOKEN"
-__SYS_REPLY__ = "SYS_REPLY"
-__SYS_STAGE__ = "SYS_STAGE"
-__KEEP_VAR__ = "KEEP_VAR"
-__KEEP_DEFAULT_VAR__ = "DEFAULT_VAR"
-__PASSED_STAGES__ = "__PASSED_STAGES__"
-__LOCAL_VAR_LABEL__ = "__LOCAL_VAR_LABEL__"
-__LOCAL_VAR_VALUE__ = "__LOCAL_VAR_VALUE__"
-
-
-class StageStatus:
-    INIT = "INIT"
-    FIRST = "FIRST"
-    REFUSE = "REFUSE"
-    COMPLETE = "COMPLETE"
-
-
-class StageType:
-    BASE = "BASE"
-    SWITCH = "Switch"
 
 
 class Stage:
@@ -40,24 +21,11 @@ class Stage:
         self.sys_reply_q2 = "refuse sys reply"  # refuse
         self.sys_reply_complete = "complete sys reply"  # complete
         self.keep_user_text = kwargs.get("__KEEP_USER_TEXT__", False)
+        self.switch_welcome = True
+        self.switch_refuse = True
+        self.switch_completed = True
 
-    @staticmethod
-    def set_sys_stage_status(data: dict, label: str) -> dict:
-        data.update({__SYS_STAGE__: label})
-        return data
-
-    @staticmethod
-    def get_sys_stage_status(data: dict) -> str:
-        return data.get(__SYS_STAGE__, None)
-
-    @staticmethod
-    def is_first_access(data, stage_id):
-        # First Access
-        if __PASS_TOKEN__ not in data:
-            return True
-        if stage_id not in data[__PASS_TOKEN__]:
-            return True
-        return False
+    
 
     @staticmethod
     def clear_user_text(data):
@@ -74,30 +42,6 @@ class Stage:
     @staticmethod
     def get_user_text(data):
         return data.get(__USER_TEXT__, None)
-
-    @staticmethod
-    def had_the_token_was_pass(data: dict, stage_id) -> bool:
-        token = data.get(__PASS_TOKEN__, None)
-        if token is None:
-            return False
-        if isinstance(token, dict) and token.get(stage_id, None) is True:
-            return True
-        else:
-            return False
-
-    @staticmethod
-    def set_none_token_pass(data, stage_id):
-        if __PASS_TOKEN__ not in data:
-            data[__PASS_TOKEN__] = {}
-        data[__PASS_TOKEN__][stage_id] = None
-        return data
-
-    @staticmethod
-    def set_true_token_pass(data, stage_id):
-        if __PASS_TOKEN__ not in data:
-            data[__PASS_TOKEN__] = {}
-        data[__PASS_TOKEN__][stage_id] = True
-        return data
 
     def is_fit_needs_n_gen_entity(self, kwargs) -> Tuple[bool, dict]:
         kwargs = self.set_default_var(kwargs, __LOCAL_VAR_LABEL__, __LOCAL_VAR_VALUE__)
@@ -217,14 +161,14 @@ class Stage:
         kwargs = self.set_sys_passed_stage(kwargs,self.stage_uuid_name)
 
         # the user had passed or not.
-        if self.had_the_token_was_pass(data=kwargs, stage_id=self.stage_id) is True:
-            kwargs = self.set_sys_stage_status(kwargs, StageStatus.COMPLETE)
+        if StagePassTokenOperation.had_the_token_was_pass(data=kwargs, stage_id=self.stage_id) is True:
+            kwargs = StageStatusOperation.set_sys_stage_status(kwargs, StageStatus.COMPLETE)
             return kwargs
 
         # the user had is first time to coming
-        if self.is_first_access(kwargs, self.stage_id) is True:
-            kwargs = self.set_none_token_pass(data=kwargs, stage_id=self.stage_id)
-            kwargs = self.set_sys_stage_status(kwargs, StageStatus.FIRST)
+        if StagePassTokenOperation.is_first_access(kwargs, self.stage_id) is True and self.switch_welcome is True:
+            kwargs = StagePassTokenOperation.set_none_token_pass(data=kwargs, stage_id=self.stage_id)
+            kwargs = StageStatusOperation.set_sys_stage_status(kwargs, StageStatus.FIRST)
 
             # random reply from welcome corpus (q1)
             sys_reply = self.__choice_a_reply__(self.sys_reply_q1)
@@ -241,7 +185,7 @@ class Stage:
         is_fit_token, kwargs = self.is_fit_needs_n_gen_entity(kwargs)
         if is_fit_token is False:
             # REFUSE FLOW
-            kwargs = self.set_sys_stage_status(kwargs, StageStatus.REFUSE)
+            kwargs = StageStatusOperation.set_sys_stage_status(kwargs, StageStatus.REFUSE)
             sys_reply = self.__choice_a_reply__(self.sys_reply_q2)
 
             sys_reply = self.replace_var_ticket_to_string(kwargs, sys_reply)
@@ -253,8 +197,8 @@ class Stage:
             kwargs = self.save_user_text(kwargs, self.stage_id, __USER_TEXT__)
             if not self.keep_user_text:
                 kwargs = self.clear_user_text(kwargs)
-            kwargs = self.set_true_token_pass(kwargs, stage_id=self.stage_id)
-            kwargs = self.set_sys_stage_status(kwargs, StageStatus.COMPLETE)
+            kwargs = StagePassTokenOperation.set_true_token_pass(kwargs, stage_id=self.stage_id)
+            kwargs = StageStatusOperation.set_sys_stage_status(kwargs, StageStatus.COMPLETE)
 
             # insert ENTITY
             sys_reply = self.replace_var_ticket_to_string(kwargs, self.__choice_a_reply__(self.sys_reply_complete))

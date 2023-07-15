@@ -6,7 +6,7 @@ from .types.stage import StageStatus, StageId
 
 
 
-class StageOperation:
+class StageStatusOperation:
 
   @staticmethod
   def set_sys_stage_status(data: Memory, label: StageStatus) -> Memory:
@@ -19,12 +19,13 @@ class StageOperation:
 
 
 
-class StagePassToken:
+class StagePassTokenOperation:
   @staticmethod
   def is_first_access(data: Memory, stage_id: StageId):
       # First Access
       if __PASS_TOKEN__ not in data:
           return True
+      # print(f"{data[__PASS_TOKEN__]}: {stage_id}")  
       if stage_id not in data[__PASS_TOKEN__]:
           return True
       return False
