@@ -1,4 +1,7 @@
-from . import Stage, Agent, mock_client, mock_client_human, __USER_TEXT__
+from ConversationAgent import mock_client, mock_client_human
+from ConversationAgent.types.static import __USER_TEXT__
+from ConversationAgent.__stage__ import Stage
+from ConversationAgent.__agent__ import Agent
 import re
 from typing import Tuple
 from .__memory__ import StageMemoryFragOperation
@@ -129,4 +132,11 @@ class OrderConfirmStage(Stage):
         return True, kwargs
 
 
+agent = Agent([HelloStage, OrderStartStage, OrderConfirmStage, OrderConfirmStage])
 
+#
+text = "hello"
+reply_text, data = mock_client_once(agent, text, {})
+print(reply_text)
+
+#
