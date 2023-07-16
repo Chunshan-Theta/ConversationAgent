@@ -7,6 +7,8 @@ import re
 import random
 from typing import Dict, Any, List, Tuple
 from .__nlp_tool__ import similar_text_distance, SimilarResult
+from .__memory__ import StageMemoryFragOperation
+from .types.memory import Memory
 
 
 __RE_STAGE__ = "__RE_STAGE__"
@@ -84,7 +86,7 @@ class QAStage(Stage):
             best_res_content = new_dict_corpus[best_res_content] if best_res_content in new_dict_corpus else '0'
         return best_res_content
 
-    def is_fit_needs_n_gen_entity(self, kwargs) -> Tuple[bool, dict]:
+    def is_fit_needs_n_gen_entity(self, kwargs) -> Tuple[bool, Memory]:
         user_text = kwargs.get(__USER_TEXT__, "")
         
         corpus, new_dict_corpus = self.__encode_corpus__()
@@ -120,17 +122,17 @@ class QAStage(Stage):
                                                                  default=self.__QA_RESPOND_THRESHOLD__[0])
 
         #
-        kwargs = self.set_default_var(kwargs, __RUNNING_CORPUS__, corpus)
-        kwargs = self.set_default_var(kwargs, __QA_RESPOND__, best_res_responds)
-        kwargs = self.set_default_var(kwargs, __QA_RESPOND_QUESTION__, best_res_content)
-        kwargs = self.set_default_var(kwargs, __QA_RESPOND_SCORE__, best_res_score)
+        kwargs = StageMemoryFragOperation.set_default_frag(kwargs, __RUNNING_CORPUS__, corpus)
+        kwargs = StageMemoryFragOperation.set_default_frag(kwargs, __QA_RESPOND__, best_res_responds)
+        kwargs = StageMemoryFragOperation.set_default_frag(kwargs, __QA_RESPOND_QUESTION__, best_res_content)
+        kwargs = StageMemoryFragOperation.set_default_frag(kwargs, __QA_RESPOND_SCORE__, best_res_score)
         if best_res_score >= self.qa_threshold:
             pass_token = True
-            kwargs = self.set_default_var(kwargs, __QA_RESPOND_THRESHOLD__, True)
+            kwargs = StageMemoryFragOperation.set_default_frag(kwargs, __QA_RESPOND_THRESHOLD__, True)
         else:
             pass_token = False if self.disable_refuse_question is False else True
 
-            kwargs = self.set_default_var(kwargs, __QA_RESPOND_THRESHOLD__, False)
+            kwargs = StageMemoryFragOperation.set_default_frag(kwargs, __QA_RESPOND_THRESHOLD__, False)
 
         return pass_token, kwargs
 
@@ -203,12 +205,12 @@ class REStage(Stage):
         for (rule, entity_name) in self.is_fits:
             entities = self.__get_entity__(rule, user_text)
             if len(entities) > 0:
-                kwargs = self.set_default_var(kwargs, entity_name, " ".join(entities))
+                kwargs = StageMemoryFragOperation. set_default_frag(kwargs, entity_name, " ".join(entities))
             else:
                 missing_entities.append(entity_name)
 
         for entity_name in missing_entities:
-            if self.get_default_var(kwargs, entity_name) is None:
+            if StageMemoryFragOperation. get_default_frag(kwargs, entity_name) is None:
                 pass_token = False
 
         if self.disable_refuse_question:
@@ -266,7 +268,7 @@ class LibSwitchStage(Stage):
             #
             pass_token = True
             for l, s, t in zip(label, symbol, text):
-                l_var = self.get_default_var(kwargs, l)
+                l_var = StageMemoryFragOperation. get_default_frag(kwargs, l)
                 pass_token = compute_by_string(l_var, s, t)
 
             if pass_token:
@@ -318,7 +320,7 @@ class ClassifyStage(REStage):
         for entity_name, value in classify_values_dict.items():
             if value >= self.__Classify_THRESHOLD__:
                 pass_token = True
-            kwargs = self.set_default_var(kwargs, entity_name, value)
+            kwargs = StageMemoryFragOperation. set_default_frag(kwargs, entity_name, value)
 
         # Save
         __LABEL_SAVE_Classify_THRESHOLD__ = self.__SAVED_NAME__.get(self.__SAVE_Classify_THRESHOLD__,
@@ -329,10 +331,10 @@ class ClassifyStage(REStage):
                                                                  self.__SAVE_Classify_result__)
 
         ##
-        kwargs = self.set_default_var(kwargs, __LABEL_SAVE_Classify_result__, classify_values_dict)
-        kwargs = self.set_default_var(kwargs, __LABEL_SAVE_Classify_THRESHOLD__, self.__Classify_THRESHOLD__)
-        kwargs = self.set_default_var(kwargs, __LABEL_SAVE_Classify_PASS__, pass_token)
-        kwargs = self.set_default_var(kwargs, __LABEL_SAVE_Classify_Best__,
+        kwargs = StageMemoryFragOperation. set_default_frag(kwargs, __LABEL_SAVE_Classify_result__, classify_values_dict)
+        kwargs = StageMemoryFragOperation. set_default_frag(kwargs, __LABEL_SAVE_Classify_THRESHOLD__, self.__Classify_THRESHOLD__)
+        kwargs = StageMemoryFragOperation. set_default_frag(kwargs, __LABEL_SAVE_Classify_PASS__, pass_token)
+        kwargs = StageMemoryFragOperation. set_default_frag(kwargs, __LABEL_SAVE_Classify_Best__,
                                       max(classify_values_dict, key=classify_values_dict.get))
 
         if self.disable_refuse_question:

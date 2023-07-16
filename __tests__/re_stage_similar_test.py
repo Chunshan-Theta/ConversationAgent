@@ -3,6 +3,7 @@ from ConversationAgent.LibStage import gen_multi_agent
 from ConversationAgent import __agent__, mock_client_once, to_bot
 from typing import Dict, Any
 from ConversationAgent.LibStage import QAStage
+from ConversationAgent.__memory__ import StageMemoryFragOperation 
 
 """
 ##########
@@ -113,7 +114,7 @@ class TestREStage(unittest.TestCase):
         reply_text, data = to_bot(agent, text, data)
         # print(f"data: {data}")
         # print(f"reply_text: {reply_text}")
-        self.assertTrue(QAStage.get_default_var(data, QAStage.__QA_RESPOND_QUESTION__[0])=='廁所在哪裡')
+        self.assertTrue(StageMemoryFragOperation.get_default_frag(data, QAStage.__QA_RESPOND_QUESTION__[0])=='廁所在哪裡')
 
 
 
