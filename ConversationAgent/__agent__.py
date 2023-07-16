@@ -1,20 +1,19 @@
 import json
 import uuid
 import re
-
-from .__stage__ import Stage, __USER_TEXT__, __SYS_REPLY__, StageStatus, \
-    __LOCAL_VAR_LABEL__, __LOCAL_VAR_VALUE__, StageType, __PASS_TOKEN__, __KEEP_VAR__, \
-    __KEEP_DEFAULT_VAR__
-
+from typing import Tuple, List, Dict, Any
+from .__stage__ import Stage, StageStatus, StageType
+from .types.static import __USER_TEXT__, __SYS_REPLY__, __LOCAL_VAR_LABEL__, __LOCAL_VAR_VALUE__, __PASS_TOKEN__, __KEEP_VAR__, __KEEP_DEFAULT_VAR__
+from .__memory__ import StagePassTokenOperation, StageStatusOperation
 
 class SingleThreadAgent:
 
-    def __init__(self, stages: [Stage]):
+    def __init__(self, stages: List[Stage]):
         self.stages = stages
 
     @staticmethod
     def is_not_complete(data) -> bool:
-        status = Stage.get_sys_stage_status(data)
+        status = StageStatusOperation.get_sys_stage_status(data)
         return True if status in [StageStatus.FIRST, StageStatus.REFUSE] else False
 
     @staticmethod
@@ -27,8 +26,8 @@ class SingleThreadAgent:
         return data
 
     @classmethod
-    def get_sys_reply(cls, data):
-        reply: list = data.get(__SYS_REPLY__, [])
+    def get_sys_reply(cls, data: Dict[str, Any]) -> list[str]:
+        reply: List[str] = data.get(__SYS_REPLY__, [])
         reply = [line for line in reply if line != ""]
         return reply
 
@@ -37,7 +36,7 @@ class SingleThreadAgent:
         data[__SYS_REPLY__] = texts
         return data
 
-    def run_all_stages(self, **kwargs) -> (list, dict):
+    def run_all_stages(self, **kwargs: Dict[str, Any]) -> Tuple[List[str], Dict[str, Any]]:
         #
         kwargs = self.clear_sys_reply(kwargs)
 

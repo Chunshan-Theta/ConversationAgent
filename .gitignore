@@ -1,3 +1,15 @@
 ConversationAgent.egg-info/
 dist/
 *.pyc
+.venv
+venv
+.coverage
+.pytest_cache
+*.lock
+.replit
+replit.nix
+.upm/
+poetry.lock
+pyproject.toml
+.breakpoints
+.config

@@ -1,9 +1,15 @@
+from __future__ import annotations
 from .__stage__ import Stage, __USER_TEXT__, StageType
 from .__agent__ import Agent, MultiAgent
 from .__tool__ import get_value_from_dict_by_multi_name, compute_by_string
 from .jieba_zh import analyse
 import re
 import random
+from typing import Dict, Any, List, Tuple
+from .__nlp_tool__ import similar_text_distance, SimilarResult
+from .__memory__ import StageMemoryFragOperation
+from .types.memory import Memory
+
 
 __RE_STAGE__ = "__RE_STAGE__"
 __QA_STAGE__ = "__QA_STAGE__"
@@ -20,7 +26,7 @@ __COMPLETE_SAYING_LABELS__ = ["__SYS_COMPLETE__", "sys_reply_complete", "sys_com
 __DISABLE_WELCOME_LABEL__ = ["__DISABLE_WELCOME__", "__DISSABLE_Q1__", "DISSABLE_WELCOME"]
 __DISABLE_REFUSE_LABEL__ = ["__DISABLE_REFUSE__"]
 
-from .nlp_tool import similar
+
 
 
 class QAStage(Stage):
@@ -60,36 +66,40 @@ class QAStage(Stage):
         self.refactor_questions = data.get(self.__REFACTOR_QUESTION__, False)
 
         if get_value_from_dict_by_multi_name(d=data, names=__DISABLE_WELCOME_LABEL__, default=False):
-            self.is_first_access = self.disabel_is_first_access
+            # self.is_first_access = self.disabel_is_first_access
+          self.switch_welcome = False
 
         self.disable_refuse_question = get_value_from_dict_by_multi_name(d=data, names=__DISABLE_REFUSE_LABEL__,
                                                                          default=False)
 
-    def __request_similar_api__(self, text, corpus):
-        return similar(text, corpus)
+    def __request_similar_api__(self, text, corpus) -> SimilarResult:
+        return similar_text_distance(text, corpus)
 
     def __encode_corpus__(self):
         source_corpus = list(self.corpus.keys())
         dict_corpus = {self.__keyword__(self.__stop_word__(s)): s for s in source_corpus}
         return list(self.corpus.keys() if not self.refactor_questions else dict_corpus.keys()), dict_corpus
 
-    def __decode_corpus__(self, worker_response, new_dict_corpus):
-        best_res_content = str(worker_response[0][0])
+    def __decode_corpus__(self, worker_response: str, new_dict_corpus: Dict[str, Any]):
+        best_res_content = str(worker_response)
         if self.refactor_questions:
             best_res_content = new_dict_corpus[best_res_content] if best_res_content in new_dict_corpus else '0'
         return best_res_content
 
-    def is_fit_needs_n_gen_entity(self, kwargs) -> (bool, dict):
+    def is_fit_needs_n_gen_entity(self, kwargs) -> Tuple[bool, Memory]:
         user_text = kwargs.get(__USER_TEXT__, "")
-
+        
         corpus, new_dict_corpus = self.__encode_corpus__()
 
-        responds = self.__request_similar_api__(user_text, corpus)
-        worker_response = responds["worker response"]["ans"]
+
+        # print(f"user_text: {user_text}")
+        # print(f"corpus: {corpus}")
+        responds: SimilarResult = self.__request_similar_api__(user_text, corpus)
+        worker_response = responds.ans
         best_res_content = self.__decode_corpus__(worker_response, new_dict_corpus)
 
         ##
-        best_res_score = worker_response[0][1]
+        best_res_score = responds.score
         best_res_responds = self.corpus[best_res_content] if best_res_content in self.corpus else None
         if isinstance(best_res_responds,list):
             best_res_responds = random.choice(best_res_responds)
@@ -112,23 +122,19 @@ class QAStage(Stage):
                                                                  default=self.__QA_RESPOND_THRESHOLD__[0])
 
         #
-        kwargs = self.set_default_var(kwargs, __RUNNING_CORPUS__, corpus)
-        kwargs = self.set_default_var(kwargs, __QA_RESPOND__, best_res_responds)
-        kwargs = self.set_default_var(kwargs, __QA_RESPOND_QUESTION__, best_res_content)
-        kwargs = self.set_default_var(kwargs, __QA_RESPOND_SCORE__, best_res_score)
+        kwargs = StageMemoryFragOperation.set_default_frag(kwargs, __RUNNING_CORPUS__, corpus)
+        kwargs = StageMemoryFragOperation.set_default_frag(kwargs, __QA_RESPOND__, best_res_responds)
+        kwargs = StageMemoryFragOperation.set_default_frag(kwargs, __QA_RESPOND_QUESTION__, best_res_content)
+        kwargs = StageMemoryFragOperation.set_default_frag(kwargs, __QA_RESPOND_SCORE__, best_res_score)
         if best_res_score >= self.qa_threshold:
             pass_token = True
-            kwargs = self.set_default_var(kwargs, __QA_RESPOND_THRESHOLD__, True)
+            kwargs = StageMemoryFragOperation.set_default_frag(kwargs, __QA_RESPOND_THRESHOLD__, True)
         else:
             pass_token = False if self.disable_refuse_question is False else True
 
-            kwargs = self.set_default_var(kwargs, __QA_RESPOND_THRESHOLD__, False)
+            kwargs = StageMemoryFragOperation.set_default_frag(kwargs, __QA_RESPOND_THRESHOLD__, False)
 
         return pass_token, kwargs
-
-    @staticmethod
-    def disabel_is_first_access(kwargs, stage_id):
-        return False
 
     @staticmethod
     def __stop_word__(text, pronouns=True, common_skip=True, road_name=True, symbol=True):
@@ -173,14 +179,12 @@ class REStage(Stage):
                                                                     names=__COMPLETE_SAYING_LABELS__)
         self.is_fits = data.get("is_fits", [])
         if get_value_from_dict_by_multi_name(d=data, names=__DISABLE_WELCOME_LABEL__, default=False):
-            self.is_first_access = self.disabel_is_first_access
+            # self.is_first_access = self.disabel_is_first_access
+            self.switch_welcome = False
 
         self.disable_refuse_question = get_value_from_dict_by_multi_name(d=data, names=__DISABLE_REFUSE_LABEL__,
                                                                          default=False)
 
-    @staticmethod
-    def disabel_is_first_access(kwargs, stage_id):
-        return False
 
     @staticmethod
     def __get_entity__(rule, text):
@@ -193,7 +197,7 @@ class REStage(Stage):
                 entities.append(r)
         return entities
 
-    def is_fit_needs_n_gen_entity(self, kwargs) -> (bool, dict):
+    def is_fit_needs_n_gen_entity(self, kwargs) -> Tuple[bool, dict]:
         user_text = kwargs.get(__USER_TEXT__, "")
         pass_token = True
 
@@ -201,12 +205,12 @@ class REStage(Stage):
         for (rule, entity_name) in self.is_fits:
             entities = self.__get_entity__(rule, user_text)
             if len(entities) > 0:
-                kwargs = self.set_default_var(kwargs, entity_name, " ".join(entities))
+                kwargs = StageMemoryFragOperation. set_default_frag(kwargs, entity_name, " ".join(entities))
             else:
                 missing_entities.append(entity_name)
 
         for entity_name in missing_entities:
-            if self.get_default_var(kwargs, entity_name) is None:
+            if StageMemoryFragOperation. get_default_frag(kwargs, entity_name) is None:
                 pass_token = False
 
         if self.disable_refuse_question:
@@ -264,7 +268,7 @@ class LibSwitchStage(Stage):
             #
             pass_token = True
             for l, s, t in zip(label, symbol, text):
-                l_var = self.get_default_var(kwargs, l)
+                l_var = StageMemoryFragOperation. get_default_frag(kwargs, l)
                 pass_token = compute_by_string(l_var, s, t)
 
             if pass_token:
@@ -272,7 +276,7 @@ class LibSwitchStage(Stage):
 
         raise RuntimeError(f"Not Found Path: {stages_searched}")
 
-    def is_fit_needs_n_gen_entity(self, kwargs) -> (bool, dict):
+    def is_fit_needs_n_gen_entity(self, kwargs) -> Tuple[bool, dict]:
         raise RuntimeError
 
 
@@ -307,7 +311,7 @@ class ClassifyStage(REStage):
         self.__Classify_THRESHOLD__ = data.get(self.__Classify_THRESHOLD__, 0.5)
         self.__SAVED_NAME__ = data.get("__SAVED_NAME__", {})
 
-    def is_fit_needs_n_gen_entity(self, kwargs) -> (bool, dict):
+    def is_fit_needs_n_gen_entity(self, kwargs) -> Tuple[bool, dict]:
 
         user_text = kwargs.get(__USER_TEXT__, "")
         pass_token = False
@@ -316,7 +320,7 @@ class ClassifyStage(REStage):
         for entity_name, value in classify_values_dict.items():
             if value >= self.__Classify_THRESHOLD__:
                 pass_token = True
-            kwargs = self.set_default_var(kwargs, entity_name, value)
+            kwargs = StageMemoryFragOperation. set_default_frag(kwargs, entity_name, value)
 
         # Save
         __LABEL_SAVE_Classify_THRESHOLD__ = self.__SAVED_NAME__.get(self.__SAVE_Classify_THRESHOLD__,
@@ -327,10 +331,10 @@ class ClassifyStage(REStage):
                                                                  self.__SAVE_Classify_result__)
 
         ##
-        kwargs = self.set_default_var(kwargs, __LABEL_SAVE_Classify_result__, classify_values_dict)
-        kwargs = self.set_default_var(kwargs, __LABEL_SAVE_Classify_THRESHOLD__, self.__Classify_THRESHOLD__)
-        kwargs = self.set_default_var(kwargs, __LABEL_SAVE_Classify_PASS__, pass_token)
-        kwargs = self.set_default_var(kwargs, __LABEL_SAVE_Classify_Best__,
+        kwargs = StageMemoryFragOperation. set_default_frag(kwargs, __LABEL_SAVE_Classify_result__, classify_values_dict)
+        kwargs = StageMemoryFragOperation. set_default_frag(kwargs, __LABEL_SAVE_Classify_THRESHOLD__, self.__Classify_THRESHOLD__)
+        kwargs = StageMemoryFragOperation. set_default_frag(kwargs, __LABEL_SAVE_Classify_PASS__, pass_token)
+        kwargs = StageMemoryFragOperation. set_default_frag(kwargs, __LABEL_SAVE_Classify_Best__,
                                       max(classify_values_dict, key=classify_values_dict.get))
 
         if self.disable_refuse_question:
@@ -352,10 +356,10 @@ __LIB_STAGES__ = {
 }
 
 
-def gen_multi_agent(stage_dict: dict, stages_classes=None):
+def gen_multi_agent(stage_dict: Dict[str, Any], stages_classes: None | Dict[str, Any] = None) -> MultiAgent:
     if stages_classes is None:
         stages_classes = __LIB_STAGES__
-    stages = {}
+    stages:Dict[str, List[Stage]] = {}
     for stages_label, stage_jsons in stage_dict.items():
         stages[stages_label] = []
         for stage_json in stage_jsons:

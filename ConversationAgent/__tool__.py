@@ -1,4 +1,5 @@
-def get_value_from_dict_by_multi_name(d: dict, names: [str], default=None):
+from typing import Dict, Any, List
+def get_value_from_dict_by_multi_name(d: Dict[str, Any], names: List[str], default=None):
     for name in names:
         if name in d:
             return d[name]
