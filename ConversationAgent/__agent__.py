@@ -2,10 +2,9 @@ import json
 import uuid
 import re
 from typing import Tuple, List, Dict, Any
-from .__stage__ import Stage, __USER_TEXT__, __SYS_REPLY__, StageStatus, \
-    __LOCAL_VAR_LABEL__, __LOCAL_VAR_VALUE__, StageType, __PASS_TOKEN__, __KEEP_VAR__, \
-    __KEEP_DEFAULT_VAR__
-
+from .__stage__ import Stage, StageStatus, StageType
+from .types.static import __USER_TEXT__, __SYS_REPLY__, __LOCAL_VAR_LABEL__, __LOCAL_VAR_VALUE__, __PASS_TOKEN__, __KEEP_VAR__, __KEEP_DEFAULT_VAR__
+from .__memory__ import StagePassTokenOperation, StageStatusOperation
 
 class SingleThreadAgent:
 
@@ -14,7 +13,7 @@ class SingleThreadAgent:
 
     @staticmethod
     def is_not_complete(data) -> bool:
-        status = Stage.get_sys_stage_status(data)
+        status = StageStatusOperation.get_sys_stage_status(data)
         return True if status in [StageStatus.FIRST, StageStatus.REFUSE] else False
 
     @staticmethod
