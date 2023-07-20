@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <title>JSON Editor</title>
+      <meta charset="UTF-8">
+      <link rel="stylesheet" href="styles.css">
+      <script src="script.js" charset="UTF-8"></script>
+      <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ext-beautify.js"></script>
+      <style>.editor {
+                height: 500px;
+                width: 100%;
+                }
+                body, html {
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            .container {
+                display: flex;
+                height: 100%;
+            }
+            .left-half, .right-half {
+                flex: 1;
+                height: 100%;
+            }
+            
+      </style>
+   </head>
+   <body>
+    <div class="chat-container">
+        <div class="chat-messages" id="chat-messages">
+            <!-- 聊天消息将在此处显示 -->
+            <!-- 例如：<div class="message">用户1：你好！</div> -->
+        </div>
+        <div class="chat-input">
+            <input type="text" id="message-input" placeholder="在這裡輸入消息">
+            <button id="send-button">發送</button>
+        </div>
+    </div>
+      <h1>JSON Editor</h1>
+        <div class="container">
+        <div class="left-half">
+            <!-- 这里放左边区域的内容 -->
+            <div id="editor" class="editor"></div>
+            <button id="beautify">Beautify</button>
+        </div>
+        <div class="right-half">
+            <!-- 这里放右边区域的内容 -->
+            <div id="editor2" class="editor" aria-readonly="true"></div>
+        </div>
+        </div>
+      
+      
+      
+
+      <script>
+        var editor = ace.edit("editor2");
+        editor.setTheme("ace/theme/monokai");
+        editor.getSession().setMode("ace/mode/json");
+
+
+
+        var editor = ace.edit("editor");
+        editor.setTheme("ace/theme/monokai");
+        editor.getSession().setMode("ace/mode/json");
+        var session = editor.getSession().setValue(JSON.stringify({
+            "__MAIN_STAGES__": [
+            {
+                "__STAGE_NAME__": "開始詢問",
+                "is_fits": [
+                [
+                    "(月票|1280|長期票|定期票)+",
+                    "set_level"
+                ],
+                [
+                    "(單程票|單程|一次)+",
+                    "set_level"
+                ]
+                ],
+                "question": {
+                "sys_reply_complete": "好的，將開始訂購 %%set_level%% ",
+                "sys_reply_q1": "請問是要做哪種票種呢？",
+                "sys_reply_q2": "請說『月票』或是『單程票』"
+                },
+                "stage_type": "__RE_STAGE__"
+            },
+            {
+                "stage_type": "Switch",
+                "stages_filter": [
+                [
+                    "set_level",
+                    "月票",
+                    "_月票_"
+                ],
+                [
+                    "set_level",
+                    "1280",
+                    "_月票_"
+                ],
+                [
+                    "set_level",
+                    "長期票",
+                    "_月票_"
+                ],
+                [
+                    "set_level",
+                    "定期票",
+                    "_月票_"
+                ],
+                [
+                    "set_level",
+                    "單程票",
+                    "_單程票_"
+                ],
+                [
+                    "set_level",
+                    "單程",
+                    "_單程票_"
+                ],
+                [
+                    "set_level",
+                    "一次",
+                    "_單程票_"
+                ]
+                ]
+            }
+            ],
+            "_單程票_": [
+            {
+                "__DISSABLE_Q1__": true,
+                "__STAGE_NAME__": "單程開始",
+                "is_fits": [],
+                "question": {
+                "sys_reply_complete": "如果要訂購單程票，請使用票卷機，感謝您的使用。\n        ",
+                "sys_reply_q1": "",
+                "sys_reply_q2": ""
+                },
+                "stage_type": "__RE_STAGE__"
+            }
+            ],
+            "_月票_": [
+            {
+                "__STAGE_NAME__": "月票開始",
+                "is_fits": [
+                [
+                    "(是|好的|好|沒問題)+$",
+                    "user_status"
+                ],
+                [
+                    "(否|不|不行|不要|不好)+$",
+                    "user_status"
+                ]
+                ],
+                "question": {
+                "sys_reply_complete": "好的，確認您使用 %%set_level%% 車廂的意願為 『 %%user_status%% 』，\n            感謝您的使用。\n        ",
+                "sys_reply_q1": "月票的價格為 1280元，是否確認？",
+                "sys_reply_q2": "月票的價格為 1280元，是否確認？請回答『是』或『否』"
+                },
+                "stage_type": "__RE_STAGE__"
+            }
+            ]
+        }, null, '\t'));
+        $('#beautify').click(function() {
+            var session = editor.getSession();
+            var value = session.getValue();
+            try {
+                var obj = JSON.parse(value);
+                var beautified = JSON.stringify(obj, null, '\t');
+                session.setValue(beautified);
+            } catch (e) {
+                alert("Invalid JSON");
+            }
+        });
+      </script>
+   </body>
+</html>

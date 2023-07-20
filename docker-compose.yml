@@ -8,3 +8,9 @@ services:
       mongo_host: ""
     ports:
       - "8000:8000"
+  client:
+      image: nginx
+      ports:
+          - 80:80
+      volumes:
+          - ./www:/usr/share/nginx/html
