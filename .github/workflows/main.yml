@@ -3,12 +3,11 @@ name: CI
 on:
   push:
     branches:
-      - master
-      # - release
-      # - dev-*
+      - master-chatbot
+
 
 jobs:
-  build:
+  build-pkg-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,34 +20,9 @@ jobs:
           python-version: "3.10"
 
       - name: Install dependencies
-        run: pip install -e .
+        run: pip install -r requirements.txt
     
       - name: Run tests
-        run: python3 -m unittest __tests__/*.py
+        run: python3 -m unittest __tests_pkg__/*.py
 
-      - name: Install cov test dependencies
-        run: pip install pytest-cov  
-
-      - name: Run tests with coverage
-        run: python3 -m pytest  __tests__/*.py --cov=ConversationAgent
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.10'
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install setuptools wheel twine
-    - name: Build and publish
-      env:
-        TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-        TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-      run: |
-        python setup.py sdist bdist_wheel
-        twine upload dist/*
+      
