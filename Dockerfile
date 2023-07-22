@@ -11,4 +11,5 @@ COPY . /app
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 指定執行的命令
+# uvicorn main:app --host 0.0.0.0 --port 8000
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -37,16 +37,18 @@
             <button id="send-button">發送</button>
         </div>
     </div>
-      <h1>JSON Editor</h1>
+      <h1>Bot Data</h1>
         <div class="container">
         <div class="left-half">
             <!-- 这里放左边区域的内容 -->
+            <h2>Bot Agent</h2>
             <div id="editor" class="editor"></div>
             <button id="beautify">Beautify</button>
         </div>
         <div class="right-half">
             <!-- 这里放右边区域的内容 -->
-            <div id="editor2" class="editor" aria-readonly="true"></div>
+            <h2>Bot Memory</h2>
+            <div id="editor2" class="editor"></div>
         </div>
         </div>
       
@@ -57,6 +59,7 @@
         var editor = ace.edit("editor2");
         editor.setTheme("ace/theme/monokai");
         editor.getSession().setMode("ace/mode/json");
+        editor.setReadOnly(true);
 
 
 
