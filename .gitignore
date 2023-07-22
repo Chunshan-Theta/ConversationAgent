@@ -11,3 +11,4 @@ poetry.lock
 pyproject.toml
 .breakpoints
 .config
+.vscode

@@ -3,13 +3,13 @@ version: "3"
 services:
   app:
     build: .
-    environment:
-      chatgpt_api_key: ""
-      mongo_host: ""
     ports:
       - "8000:8000"
   client:
       image: nginx
+      environment:
+          chatgpt_api_key: ""
+          mongo_host: ""
       ports:
           - 80:80
       volumes:

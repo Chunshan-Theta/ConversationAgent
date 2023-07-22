@@ -5,26 +5,11 @@
       <meta charset="UTF-8">
       <link rel="stylesheet" href="styles.css">
       <script src="script.js" charset="UTF-8"></script>
-      <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ext-beautify.js"></script>
-      <style>.editor {
-                height: 500px;
-                width: 100%;
-                }
-                body, html {
-                height: 100%;
-                margin: 0;
-                padding: 0;
-            }
-            .container {
-                display: flex;
-                height: 100%;
-            }
-            .left-half, .right-half {
-                flex: 1;
-                height: 100%;
-            }
-            
-      </style>
+      <script src="memoryEditor.js" charset="UTF-8"></script>
+      <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ext-beautify.js"></script>
+      <style></style>
    </head>
    <body>
     <div class="chat-container">
@@ -56,16 +41,17 @@
       
 
       <script>
-        var editor = ace.edit("editor2");
-        editor.setTheme("ace/theme/monokai");
-        editor.getSession().setMode("ace/mode/json");
-        editor.setReadOnly(true);
+        // Memory
+        // var editor = ace.edit("editor2");
+        // editor.setTheme("ace/theme/monokai");
+        // editor.getSession().setMode("ace/mode/json");
+        // editor.setReadOnly(true);
 
 
 
-        var editor = ace.edit("editor");
-        editor.setTheme("ace/theme/monokai");
-        editor.getSession().setMode("ace/mode/json");
+        // var editor = ace.edit("editor");
+        // editor.setTheme("ace/theme/monokai");
+        // editor.getSession().setMode("ace/mode/json");
         var session = editor.getSession().setValue(JSON.stringify({
             "__MAIN_STAGES__": [
             {
