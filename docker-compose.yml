@@ -6,12 +6,12 @@ services:
     ports:
       - "8000:8000"
   client:
-      image: node
+      image: node:20.5.0
       environment:
           chatgpt_api_key: ""
           mongo_host: ""
       ports:
-          - 3000:80
+          - 3000:3000
       volumes:
           - ./frontend:/usr/src
-      command: bash -c "cd /usr/src && npm install && npm dev"
+      command: bash -c "cd /usr/src && npm install && npm install react-ace && npm start"

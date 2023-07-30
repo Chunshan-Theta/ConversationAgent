@@ -1,0 +1,8 @@
+.container {
+  display: flex;
+  height: 100%;
+}
+.left-half, .right-half {
+  flex: 1;
+  height: 100%;
+}

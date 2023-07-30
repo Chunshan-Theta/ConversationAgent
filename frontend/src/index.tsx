@@ -1,7 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
+import './css/row.css';
+import './css/jsonEditor.css';
+import {BotEditor, MemoryEditor} from './components/jsonEditor';
 import reportWebVitals from './reportWebVitals';
 
 const root = ReactDOM.createRoot(
@@ -9,7 +10,19 @@ const root = ReactDOM.createRoot(
 );
 root.render(
   <React.StrictMode>
-    <App />
+
+      <h1>Bot Data</h1>
+        <div className="container">
+          <div className="left-half">
+            {/* <!-- 这里放右边区域的内容 --> */}
+              <BotEditor editorId="e1"/>
+              
+          </div>
+          <div className="right-half">
+              {/* <!-- 这里放右边区域的内容 --> */}
+              <MemoryEditor editorId="e2" />
+          </div>
+        </div>
   </React.StrictMode>
 );
 
